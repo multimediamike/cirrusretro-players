@@ -1,0 +1,1 @@
+#define GME_TYPE_LIST gme_nsf_type,gme_nsfe_type
