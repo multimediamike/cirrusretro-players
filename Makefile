@@ -1,9 +1,12 @@
-TARGET=cr-spc.js
-.DEFAULT_GOAL=cr-spc.js
+.DEFAULT_GOAL=all-players
+
+GME_PLAYERS:=cr-gme.js
+
+all-players: $(GME_PLAYERS)
 
 CXX:=em++
 
-THINGS_TO_CLEAN:=$(TARGET)
+THINGS_TO_CLEAN:=$(GME_PLAYERS)
 
 EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerSetVoiceState', '_crPlayerCleanup']";
 
@@ -54,16 +57,26 @@ GME_CXX_SOURCES:=gme_interface.cpp \
 	gme-source-0.6.0/Vgm_Emu_Impl.cpp \
 	gme-source-0.6.0/Ym2413_Emu.cpp \
 	gme-source-0.6.0/Ym2612_Emu.cpp
-#GME_CXXFLAGS:=-Wall -g -Os -DHAVE_CONFIG_H -Igme-source-0.6.0 -Igme-source-0.6.0/config-headers/spc
-GME_CXXFLAGS:=-Wall -g -Os -Igme-source-0.6.0 -Igme-source-0.6.0/config-headers/spc
+
+GME_CXXFLAGS:=-Wall -Os -Igme-source-0.6.0
 GME_CXX_OBJECTS:=$(patsubst %.cpp,%.js.o,$(GME_CXX_SOURCES))
+
 # C++ rule
 %.js.o : %.cpp
 	$(CXX) -o $@ -c $< $(GME_CXXFLAGS)
-THINGS_TO_CLEAN:=$(THINGS_TO_CLEAN) $(GME_C_OBJECTS) $(GME_CXX_OBJECTS)
+THINGS_TO_CLEAN+=$(GME_CXX_OBJECTS)
 
-$(TARGET): $(GME_CXX_OBJECTS)
-	$(CXX) -o $(TARGET) $^ $(GME_CXX_FLAGS) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
+cr-gme.js: $(GME_CXX_OBJECTS)
+	$(CXX) -o cr-gme.js $^ $(GME_CXXFLAGS) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
 
 clean:
 	rm -f $(TARGET) $(THINGS_TO_CLEAN)
+
+DEPS:=$(subst .cpp,.d,$(GME_CXX_SOURCES))
+THINGS_TO_CLEAN+=$(DEPS)
+include $(DEPS)
+
+%.d: %.cpp
+	$(CXX) -MM $(GME_CXXFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
