@@ -1,0 +1,32 @@
+TARGET:=xzdec.js
+.DEFAULT_GOAL:=$(TARGET)
+
+CC:=emcc
+
+THINGS_TO_CLEAN:=$(TARGET)
+
+EXPORT_LIST="['_xz_decompress']"
+
+# compile XZ objects
+XZ_C_SOURCES:=xzdec.c xz-embedded/xz_crc32.c xz-embedded/xz_dec_lzma2.c xz-embedded/xz_dec_stream.c
+XZ_C_OBJECTS:=$(subst .c,.js.o,$(XZ_C_SOURCES))
+XZ_CFLAGS:=-Wall -Os -Ixz-embedded
+%.js.o : %.c
+	$(CC) -o $@ -c $< $(XZ_CFLAGS)
+THINGS_TO_CLEAN+=$(XZ_C_OBJECTS)
+
+$(TARGET): $(XZ_C_OBJECTS)
+	$(CC) -o $(TARGET) $^ $(XZ_CFLAGS) -s EXPORTED_FUNCTIONS="['_xz_decompress']"
+
+# dependencies
+DEPS:=$(subst .c,.d,$(XZ_C_SOURCES))
+THINGS_TO_CLEAN+=$(DEPS)
+include $(DEPS)
+
+clean:
+	rm -f $(TARGET) $(THINGS_TO_CLEAN)
+
+%.d: %.c
+	$(CC) -MM $(XZ_CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
