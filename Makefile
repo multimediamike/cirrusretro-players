@@ -7,7 +7,7 @@ else
 endif
 
 all:
-	make -f Makefile-xze
+	make -f Makefile-xze $(JOBS)
 	make -f Makefile-gme GME_PLAYER=ay $(JOBS)
 	make -f Makefile-gme GME_PLAYER=gbs $(JOBS)
 	make -f Makefile-gme GME_PLAYER=gym $(JOBS)
