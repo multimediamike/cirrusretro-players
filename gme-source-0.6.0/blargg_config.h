@@ -23,14 +23,6 @@
 	gme_vgz_type
 */
 
-#define GME_TYPE_LIST \
-	gme_ay_type,\
-	gme_gbs_type,\
-	gme_gym_type,\
-	gme_nsf_type,\
-	gme_nsfe_type,\
-	gme_spc_type
-
 // Uncomment to enable platform-specific optimizations
 //#define BLARGG_NONPORTABLE 1
 
