@@ -1,5 +1,4 @@
 *.o
-*.js
 *.d
 objects
 final
