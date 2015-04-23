@@ -1,19 +1,28 @@
-if (process.argv.length < 6)
+var fs = require('fs');
+var crypto = require('crypto');
+
+var outputFile = "out.wav";
+var SAMPLE_RATE = 44100;
+var WAV_HEADER_SIZE = 44;
+
+if (process.argv.length < 3)
 {
-    console.log("USAGE: nodejs cr-test-harness.js <cr-player.js> <music file> <track to play> <out.wav>");
+    console.log("USAGE: nodejs cr-test-harness.js <test-spec.json> [keep]");
+    console.log("  [keep] optional argument keeps the output wav file");
     process.exit(1);
 }
 
-var playerLibrary = process.argv[2];
-var filename = process.argv[3];
-var trackToPlay = process.argv[4];
-var outWav = process.argv[5];
+var testSpecFilename = process.argv[2];
+var keepOutput = false;
+if (process.argv.length >= 4 && process.argv[3] == "keep")
+{
+    keepOutput = true;
+    console.log("keeping the output file (" + outputFile + ")");
+}
 
-var fs = require('fs');
-var player = require(process.argv[2]);
+testSpec = JSON.parse(fs.readFileSync(testSpecFilename).toString());
 
-var SAMPLE_RATE = 44100;
-var WAV_HEADER_SIZE = 44;
+var player = require(testSpec['player']);
 
 var musicBuffer;
 var seconds;
@@ -23,14 +32,42 @@ function writeSamples()
 {
     var j;
 
+    /* check if it's time to complete the test */
     if (seconds === 0)
     {
+        /* finished writing the file */
         outStream.end();
+
+        /* checksum the file */
+        var md5sum = crypto.createHash("md5");
+        var output = fs.readFileSync(outputFile);
+        md5sum.update(output);
+        var digest = md5sum.digest('hex');
+        if (digest != testSpec['expected-md5'])
+        {
+            console.log("md5 hash of output differs");
+            console.log(" expected: " + testSpec['expected-md5']);
+            console.log("      got: " + digest);
+            process.exit(1);
+        }
+
+        /* delete the output file unless instructed otherwise */
+        if (!keepOutput)
+        {
+            fs.unlinkSync(outputFile);
+        }
+
+        /* cleanly shutdown the player */
+        player._crPlayerCleanup(context.byteOffset);
         return;
     }
 
     ret = player._crPlayerGenerateStereoFrames(context.byteOffset, samples.byteOffset, SAMPLE_RATE);
-    console.log(seconds + " sec; crPlayerGenerateStereoFrames() returned " + ret);
+    if (ret != 1)
+    {
+        console.log("crPlayerGenerateStereoFrames() returned " + ret);
+        process.exit(1);
+    }
     seconds -= 1;
     for (j = 0; j < samplesCount; j++)
     {
@@ -43,13 +80,18 @@ function writeSamples()
     {
         player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 1);
     }
-
     currentChannelDisabled += 1;
     player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 0);
 }
 
-stat = fs.statSync(filename);
-fd = fs.openSync(filename, "r");
+if (!fs.existsSync(testSpec['filename']))
+{
+    console.log(testSpec['filename'] + " does not exist");
+    process.exit(1);
+}
+
+stat = fs.statSync(testSpec['filename']);
+fd = fs.openSync(testSpec['filename'], "r");
 musicBuffer = new Buffer(stat.size);
 bytesRead = fs.readSync(fd, musicBuffer, 0, stat.size, null);
 fs.closeSync(fd);
@@ -61,7 +103,11 @@ var context = new Uint8Array(player.HEAPU8.buffer, contextMalloc, contextSize);
 
 /* initialize the player */
 ret = player._crPlayerInitialize(context.byteOffset, SAMPLE_RATE);
-console.log("crPlayerInitialize() returned " + ret);
+if (ret != 1)
+{
+    console.log("crPlayerInitialize() returned " + ret);
+    process.exit(1);
+}
 
 /* create memory for the music */
 var musicBufferBytes = new Uint8Array(musicBuffer);
@@ -71,15 +117,28 @@ bytes.set(new Uint8Array(musicBufferBytes.buffer));
 
 /* load the file */
 ret = player._crPlayerLoadFile(context.byteOffset, 0, bytes.byteOffset, bytes.length);
-console.log("crPlayerLoadFile() returned " + ret);
+if (ret != 1)
+{
+    console.log("crPlayerLoadFile() returned " + ret);
+    process.exit(1);
+}
 
 /* start the track */
-ret = player._crPlayerSetTrack(context.byteOffset, trackToPlay);
-console.log("crPlayerSetTrack() returned " + ret);
+ret = player._crPlayerSetTrack(context.byteOffset, testSpec['track']);
+if (ret != testSpec['expected-output-channels'])
+{
+    console.log("crPlayerSetTrack() returned " + ret + " (expected " + testSpec['expected-output-channels'] + ")");
+    process.exit(1);
+}
 
 /* how many voices? that count + 1 is the number of seconds to run */
-seconds = player._crPlayerGetVoiceCount(context.byteOffset) + 1;
-console.log("run the player for " + seconds + " sec");
+var voiceCount = player._crPlayerGetVoiceCount(context.byteOffset);
+if (voiceCount != testSpec['expected-channel-count'])
+{
+    console.log("crPlayerGetVoiceCount() returned " + voiceCount + " (expected " + testSpec['expected-channel-count'] + ")");
+    process.exit(1);
+}
+seconds = voiceCount + 1;
 
 /* create an array for the player to use for sample generation */
 var samplesCount = SAMPLE_RATE * 2;  /* 2 channels / frame */
@@ -117,24 +176,8 @@ header.writeUInt8(0x74, 38);  /* t */
 header.writeUInt8(0x61, 39);  /* a */
 header.writeUInt32LE(byteCount, 40);  /* byte count */
 
-var outStream = fs.createWriteStream(outWav)
+var outStream = fs.createWriteStream(outputFile)
 outStream.write(header, null, writeSamples);
 
 var outBuffer = new Buffer(SAMPLE_RATE * 2 * 2);
 
-/*
-var i, j;
-for (i = 0; i < SECONDS; i++)
-{
-    ret = player._crPlayerGenerateStereoFrames(context.byteOffset, samples.byteOffset, SAMPLE_RATE);
-
-    for (j = 0; j < samplesCount; j++)
-    {
-        outBuffer.writeInt16LE(samples[j], j * 2);
-    }
-    outStream.write(outBuffer);
-    console.log((i+1) + " sec; crPlayerGenerateStereoFrames() returned " + ret);
-}
-
-outStream.end();
-*/
