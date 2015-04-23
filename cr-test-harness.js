@@ -90,11 +90,7 @@ if (!fs.existsSync(testSpec['filename']))
     process.exit(1);
 }
 
-stat = fs.statSync(testSpec['filename']);
-fd = fs.openSync(testSpec['filename'], "r");
-musicBuffer = new Buffer(stat.size);
-bytesRead = fs.readSync(fd, musicBuffer, 0, stat.size, null);
-fs.closeSync(fd);
+musicBuffer = fs.readFileSync(testSpec['filename']);
 
 /* create memory for the context */
 var contextSize = player._crPlayerContextSize();
