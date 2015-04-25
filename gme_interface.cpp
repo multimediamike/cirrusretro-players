@@ -1,3 +1,4 @@
+#include <emscripten.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,10 +54,13 @@ int crPlayerSetTrack(void *context, int track)
     gmeContext *gme = (gmeContext*)context;
     gme_err_t status = NULL;
 
+    /* initialize the engine */
     status = gme_open_data(gme->dataBuffer, gme->dataBufferSize,
         &gme->emu, gme->sampleRate);
     if (status)
         return 0;
+
+    /* set the track */
     status = gme_start_track(gme->emu, track);
     if (!status)
     {
@@ -121,3 +125,11 @@ void crPlayerCleanup(void *context)
     gme->emu = NULL;
 }
 
+int main()
+{
+    EM_ASM(
+        if (typeof(crPlayerIsReady) == "function")
+            crPlayerIsReady();
+    );
+    return 0;
+}
