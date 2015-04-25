@@ -13,7 +13,7 @@ GME_SRCDIR=$(SRCDIR)/gme-source-0.6.0
 VPATH=$(SRCDIR):$(GME_SRCDIR)
 FINALDIR=$(SRCDIR)/final
 
-EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerSetVoiceState', '_crPlayerCleanup']"
+EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
 
 # GME source files, plus the Cirrus Retro glue file
 GME_CXX_SOURCES:=gme_interface.cpp \
@@ -73,10 +73,9 @@ GME_CXX_OBJECTS:=$(patsubst %.cpp,%.js.o,$(GME_CXX_SOURCES))
 	$(CXX) -o $@ -c $< $(GME_CXXFLAGS)
 
 $(TARGET): $(GME_CXX_OBJECTS)
-	$(CXX) -o $(TARGET) $^ $(GME_CXXFLAGS) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
+	$(CXX) -o $(TARGET) $^ --memory-init-file 0 $(GME_CXXFLAGS) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
 	mkdir -p $(FINALDIR)
-	cp $(TARGET) $(FINALDIR)
-	cp $(TARGET).mem $(FINALDIR)
+	cp $(TARGET)* $(FINALDIR)
 
 # dependencies
 DEPS:=$(subst .cpp,.d,$(GME_CXX_SOURCES))
