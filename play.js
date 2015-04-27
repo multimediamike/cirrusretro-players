@@ -24,55 +24,28 @@ var firstAudioTimestamp = 0;
 var nextTimestamp = 0;
 var FRAMERATE_DELTA = 1.0/30;
 
-//var musicUrl = "/music-samples/akumajou-densetsu.nsf";
-//var playerFile = "/final/cr-gme-nsf.js";
-var musicUrl = "/music-samples/burnin-rubber.ay";
-var playerFile = "/final/cr-gme-ay.js";
-var currentTrack = 0;
+var playerFile;
+var currentTrack = 2;
 var musicResponseBytes;
 var playerContext;
 var isLoaded = false;
 
-function musicLoadProgress(evt)
+function musicLoadEvent(evt)
 {
-}
+    if (evt.type == "progress")
+    {
+        console.log("progress event: " + evt.loaded + " / " + evt.total);
+    }
+    else if (evt.type == "load")
+    {
+        /* copy the response bytes to a typed array */
+        musicResponseBytes = new Uint8Array(evt.target.response);
 
-function musicLoadError(evt)
-{
-console.log("Help! there was an error while loading the music file");
-}
-
-function musicLoadCanceled(evt)
-{
-console.log("Help! music load was aborted");
-}
-
-/* finished loading the music, now initialize the playback */
-function musicLoadComplete(evt)
-{
-console.log("music has been loaded");
-    /* copy the response bytes to a typed array */
-    musicResponseBytes = new Uint8Array(evt.target.response);
-
-    /* request the player to be loaded */
-    var script = document.createElement('script');
-    script.src = playerFile;
-    document.head.appendChild(script);
-}
-
-/* in response to a body onload event */
-function pageLoadCallback()
-{
-console.log("page loaded");
-    /* load the music file first */
-    var musicFile = new XMLHttpRequest();
-    musicFile.addEventListener("progress", musicLoadProgress);
-    musicFile.addEventListener("load", musicLoadComplete);
-    musicFile.addEventListener("error", musicLoadError);
-    musicFile.addEventListener("abort", musicLoadCanceled);
-    musicFile.open("GET", musicUrl);
-    musicFile.responseType = "arraybuffer";
-    musicFile.send();
+        /* request the player to be loaded */
+        var script = document.createElement('script');
+        script.src = playerFile;
+        document.head.appendChild(script);
+    }
 }
 
 /* the player calls this function to signal that it is loaded and ready */
@@ -245,4 +218,19 @@ function drawOscope(timestamp)
     }
 
     nextTimestamp = timestamp + FRAMERATE_DELTA;
+}
+
+function initializeCrPlayer(player, fileList)
+{
+    playerFile = player[0];
+
+    /* load the music file first */
+    var musicFile = new XMLHttpRequest();
+    musicFile.addEventListener("progress", musicLoadEvent);
+    musicFile.addEventListener("load", musicLoadEvent);
+    musicFile.addEventListener("error", musicLoadEvent);
+    musicFile.addEventListener("abort", musicLoadEvent);
+    musicFile.open("GET", fileList[0]);
+    musicFile.responseType = "arraybuffer";
+    musicFile.send();
 }
