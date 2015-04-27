@@ -29,6 +29,8 @@ var currentTrack = 2;
 var musicResponseBytes;
 var playerContext;
 var isLoaded = false;
+var isPaused = false;
+var playerIsReadyCallback = null;
 
 function musicLoadEvent(evt)
 {
@@ -60,7 +62,6 @@ console.log("Player is ready!");
 
     /* initialize the player */
     ret = _crPlayerInitialize(playerContext.byteOffset, audioCtx.sampleRate);
-    //ret = _crPlayerInitialize(playerContext.byteOffset, 48000);
     console.log("_crPlayerInitialize() returned " + ret);
 
     /* transfer the ArrayBuffer to a UInt8Array */
@@ -79,8 +80,8 @@ console.log("Player is ready!");
 
     initOscope();
 
-    /* kick off the audio playback */
-    startAudio();
+    /* tell the host code that the player is ready */
+    playerIsReadyCallback();
 }
 
 function startAudio()
@@ -95,16 +96,32 @@ function startAudio()
     /* set the buffer in the AudioBufferSourceNode */
     source.buffer = myArrayBuffer;
 
-    /* connect the AudioBufferSourceNode to the destination */
-    source.connect(audioCtx.destination);
+    /* connect the AudioBufferSourceNode to ScriptProcessorNode, and the
+     * ScriptProcessorNode to the audio context destination */
+    source.connect(scriptNode);
+    scriptNode.connect(audioCtx.destination);
 
     /* start the source playing */
     source.loop = true;
-    source.connect(scriptNode);
-    scriptNode.connect(audioCtx.destination);
+
     vizBufferIndex = 0;
-    source.start();
+    source.start(0);
+
     isLoaded = true;
+    isPaused = false;
+}
+
+function pauseAudio()
+{
+console.log("pausing audio");
+    isPaused = true;
+}
+
+function resumeAudio()
+{
+console.log("resuming audio");
+    isPaused = false;
+    requestAnimationFrame(drawOscope);
 }
 
 /* callback for generating more audio */
@@ -112,6 +129,27 @@ function generateAudioCallback(audioProcessingEvent)
 {
     // The output buffer contains the samples that will be modified and played
     var outputBuffer = audioProcessingEvent.outputBuffer;
+
+    if (isPaused)
+    {
+        /* Loop through the output channels */
+        for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
+        {
+            var outputData = outputBuffer.getChannelData(channel);
+            var index = vizBufferIndex + channel;
+
+            /* Loop through the input samples */
+            for (var sample = 0; sample < outputBuffer.length; sample++)
+            {
+                outputData[sample] = 0.0;
+                /* TODO: figure out the right formula to advance this once, outside of loop */
+                index = (index + 2) % vizBufferSize;
+            }
+        }
+        vizBufferIndex = index;
+
+        return;
+    }
 
     /* create an array for the player to use for sample generation */
     var samplesCount = outputBuffer.length * channels;
@@ -171,6 +209,8 @@ function initOscope()
 
 function drawOscope(timestamp)
 {
+    if (isPaused)
+        return;
     timestamp /= 1000;
     drawVisual = requestAnimationFrame(drawOscope);
 
@@ -220,9 +260,10 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
-function initializeCrPlayer(player, fileList)
+function initializeCrPlayer(player, fileList, playerIsReady)
 {
     playerFile = player[0];
+    playerIsReadyCallback = playerIsReady;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();
@@ -233,4 +274,16 @@ function initializeCrPlayer(player, fileList)
     musicFile.open("GET", fileList[0]);
     musicFile.responseType = "arraybuffer";
     musicFile.send();
+}
+
+function enableCrPlayerAudio(enabled)
+{
+    if (enabled)
+    {
+        resumeAudio();
+    }
+    else
+    {
+        pauseAudio();
+    }
 }
