@@ -111,19 +111,6 @@ function startAudio()
     isPaused = false;
 }
 
-function pauseAudio()
-{
-console.log("pausing audio");
-    isPaused = true;
-}
-
-function resumeAudio()
-{
-console.log("resuming audio");
-    isPaused = false;
-    requestAnimationFrame(drawOscope);
-}
-
 /* callback for generating more audio */
 function generateAudioCallback(audioProcessingEvent)
 {
@@ -280,10 +267,11 @@ function enableCrPlayerAudio(enabled)
 {
     if (enabled)
     {
-        resumeAudio();
+        isPaused = false;
+        requestAnimationFrame(drawOscope);
     }
     else
     {
-        pauseAudio();
+        isPaused = true;
     }
 }
