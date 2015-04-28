@@ -8,14 +8,14 @@ var frameCount = audioCtx.sampleRate * secondsPerNode;
 var myArrayBuffer = audioCtx.createBuffer(channels, frameCount, audioCtx.sampleRate);
 var samplesMalloc;
 var samples;
-var source;
+var source;  /* AudioBufferSourceNode */
 var FRAME_COUNT = 4096;
 
 /* visualization */
 var vizBufferSize = audioCtx.sampleRate * channels;
 var vizBuffer = new Int16Array(vizBufferSize);
 var vizBufferIndex = 0;
-var canvas;
+var canvas = null;
 var canvasCtx;
 var canvasWidth;
 var canvasHeight;
@@ -29,7 +29,6 @@ var playerFile;
 var currentTrack = 2;
 var musicResponseBytes;
 var playerContext;
-var isLoaded = false;
 var isPaused = false;
 var playerIsReadyCallback = null;
 
@@ -37,7 +36,7 @@ function musicLoadEvent(evt)
 {
     if (evt.type == "progress")
     {
-        console.log("progress event: " + evt.loaded + " / " + evt.total);
+//        console.log("progress event: " + evt.loaded + " / " + evt.total);
     }
     else if (evt.type == "load")
     {
@@ -54,8 +53,6 @@ function musicLoadEvent(evt)
 /* the player calls this function to signal that it is loaded and ready */
 function crPlayerIsReady()
 {
-console.log("Player is ready!");
-
     /* create a private context for the player to use */
     var contextSize = _crPlayerContextSize();
     var contextMalloc = Module._malloc(contextSize);
@@ -63,7 +60,7 @@ console.log("Player is ready!");
 
     /* initialize the player */
     ret = _crPlayerInitialize(playerContext.byteOffset, audioCtx.sampleRate);
-    console.log("_crPlayerInitialize() returned " + ret);
+//    console.log("_crPlayerInitialize() returned " + ret);
 
     /* transfer the ArrayBuffer to a UInt8Array */
     var musicBytesMalloc = Module._malloc(musicResponseBytes.byteLength);
@@ -72,12 +69,12 @@ console.log("Player is ready!");
 
     /* load the file into the player */
     ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length);
-    console.log("_crPlayerLoadFile() returned " + ret);
+//    console.log("_crPlayerLoadFile() returned " + ret);
 
     /* set the initial track */
     ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
-    console.log("set track returned " + ret);
-    console.log("song has " + _crPlayerGetVoiceCount(playerContext.byteOffset) + " channels");
+//    console.log("set track returned " + ret);
+//    console.log("song has " + _crPlayerGetVoiceCount(playerContext.byteOffset) + " channels");
 
     initOscope();
 
@@ -102,14 +99,11 @@ function startAudio()
     source.connect(scriptNode);
     scriptNode.connect(audioCtx.destination);
 
-    /* start the source playing */
-    source.loop = true;
-
     vizBufferIndex = 0;
-    source.start(0);
-
-    isLoaded = true;
     isPaused = false;
+
+    /* start the source playing */
+    source.start(0);
 }
 
 /* callback for generating more audio */
@@ -176,7 +170,9 @@ function generateAudioCallback(audioProcessingEvent)
 
 function initOscope()
 {
-    canvas = document.querySelector('.visualizer');
+    if (!canvas)
+        return;
+
     canvasCtx = canvas.getContext("2d");
     canvasWidth = canvasCtx.canvas.width;
     canvasHeight = canvasCtx.canvas.height;
@@ -194,8 +190,9 @@ function initOscope()
 
 function drawOscope(timestamp)
 {
-    if (isPaused)
+    if (!canvas || isPaused)
         return;
+
     timestamp /= 1000;
     drawVisual = requestAnimationFrame(drawOscope);
 
@@ -245,10 +242,11 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
-function initializeCrPlayer(player, fileList, playerIsReady)
+function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady)
 {
     playerFile = player[0];
     playerIsReadyCallback = playerIsReady;
+    canvas = hostCanvas;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();

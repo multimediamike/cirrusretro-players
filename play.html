@@ -30,13 +30,12 @@ function toggleSound()
 
 function pageLoaded()
 {
-console.log("page loaded; initializing CR player");
-    initializeCrPlayer(player, fileList, playerIsReady);
+    var canvas = document.querySelector('.visualizer');
+    initializeCrPlayer(player, fileList, canvas, playerIsReady);
 }
 
 function playerIsReady()
 {
-console.log("main page got the message that the player is ready");
     playButton.value = "Pause";
     nowPlaying = true;
     startAudio();
@@ -48,12 +47,10 @@ console.log("main page got the message that the player is ready");
 
 <body onload="pageLoaded()">
 <h1>Cirrus Retro Player Test Bed</h1>
-<div>
 <canvas class="visualizer" width="600" height="300"></canvas>
-</div>
-<div>
+<p>
 <input class="btn" type="button" id="playButton" onclick="toggleSound()" value="---">
-</div>
+<p>
 </body>
 
 </html>
