@@ -9,6 +9,7 @@ var myArrayBuffer = audioCtx.createBuffer(channels, frameCount, audioCtx.sampleR
 var samplesMalloc;
 var samples;
 var source;
+var FRAME_COUNT = 4096;
 
 /* visualization */
 var vizBufferSize = audioCtx.sampleRate * channels;
@@ -87,7 +88,7 @@ console.log("Player is ready!");
 function startAudio()
 {
     /* script processor drives the dynamic audio generation */
-    scriptNode = audioCtx.createScriptProcessor(8192, 2, 2);
+    scriptNode = audioCtx.createScriptProcessor(FRAME_COUNT, 2, 2);
     scriptNode.onaudioprocess = generateAudioCallback;
 
     /* Get an AudioBufferSourceNode to play an AudioBuffer */
