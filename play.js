@@ -124,17 +124,14 @@ function generateAudioCallback(audioProcessingEvent)
         for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
         {
             var outputData = outputBuffer.getChannelData(channel);
-            var index = vizBufferIndex + channel;
 
             /* Loop through the input samples */
             for (var sample = 0; sample < outputBuffer.length; sample++)
             {
                 outputData[sample] = 0.0;
-                /* TODO: figure out the right formula to advance this once, outside of loop */
-                index = (index + 2) % vizBufferSize;
             }
         }
-        vizBufferIndex = index;
+        vizBufferIndex = (outputBuffer.length * 2) % vizBufferSize;
 
         return;
     }
