@@ -10,7 +10,7 @@ extern "C"
     int crPlayerGenerateStereoFrames(void *context, int16_t *samples, int frameCount);
     int crPlayerVoicesCanBeToggled(void *context);
     int crPlayerGetVoiceCount(void *context);
-    char *crPlayerGetVoiceName(void *context, int voice);
+    const char *crPlayerGetVoiceName(void *context, int voice);
     void crPlayerSetVoiceState(void *context, int voice, int enabled);
     void crPlayerCleanup(void *context);
 };

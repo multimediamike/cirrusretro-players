@@ -13,7 +13,7 @@ GME_SRCDIR=$(SRCDIR)/gme-source-0.6.0
 VPATH=$(SRCDIR):$(GME_SRCDIR)
 FINALDIR=$(SRCDIR)/final
 
-EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
+EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
 
 # GME source files, plus the Cirrus Retro glue file
 GME_CXX_SOURCES:=gme_interface.cpp \

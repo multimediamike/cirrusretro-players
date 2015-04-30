@@ -97,11 +97,11 @@ int crPlayerGetVoiceCount(void *context)
     return gme->voiceCount;
 }
 
-char *crPlayerGetVoiceName(void *context, int voice)
+const char *crPlayerGetVoiceName(void *context, int voice)
 {
-    //gmeContext *gme = (gmeContext*)context;
+    gmeContext *gme = (gmeContext*)context;
 
-    return NULL;
+    return gme_voice_name(gme->emu, voice);
 }
 
 void crPlayerSetVoiceState(void *context, int voice, int enabled)
