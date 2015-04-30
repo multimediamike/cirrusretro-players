@@ -22,6 +22,14 @@ if (process.argv.length >= 4 && process.argv[3] == "keep")
 
 testSpec = JSON.parse(fs.readFileSync(testSpecFilename).toString());
 
+/* make sure that the voice count matches the voice name array */
+if (testSpec['expected-voice-names'].length != testSpec['expected-voice-count'])
+{
+    console.log("test spec claims " + testSpec['expected-voice-count'] + 
+        " voices but only names " + testSpec['expected-voice-names'].length +
+        " voices");
+}
+
 var player = require(testSpec['player']);
 
 var musicBuffer;
@@ -129,11 +137,23 @@ if (ret != testSpec['expected-output-channels'])
 
 /* how many voices? that count + 1 is the number of seconds to run */
 var voiceCount = player._crPlayerGetVoiceCount(context.byteOffset);
-if (voiceCount != testSpec['expected-channel-count'])
+if (voiceCount != testSpec['expected-voice-count'])
 {
-    console.log("crPlayerGetVoiceCount() returned " + voiceCount + " (expected " + testSpec['expected-channel-count'] + ")");
+    console.log("crPlayerGetVoiceCount() returned " + voiceCount + " (expected " + testSpec['expected-voice-count'] + ")");
     process.exit(1);
 }
+
+/* do the voice names match up? */
+var voiceName;
+var expectedNames = testSpec['expected-voice-names'];
+for (var i = 0; i < voiceCount; i++)
+{
+    voiceName = player.Pointer_stringify(player._crPlayerGetVoiceName(context.byteOffset, i));
+    expectedName = expectedNames.shift();
+    if (voiceName != expectedName)
+        console.log("voice " + i + ": expected '" + expectedName + "'; got '" + voiceName + "'");
+}
+
 seconds = voiceCount + 1;
 
 /* create an array for the player to use for sample generation */
