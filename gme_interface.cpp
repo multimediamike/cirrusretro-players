@@ -11,11 +11,20 @@
 
 typedef struct
 {
+    int offset;
+    int size;
+} fileEntry;
+
+typedef struct
+{
     Music_Emu *emu;
     uint8_t *dataBuffer;
     int dataBufferSize;
     int voiceCount;
     int sampleRate;
+    int trackCount;
+    int isGameMusicArchive;
+    fileEntry *entries;
 } gmeContext;
 
 int crPlayerContextSize()
@@ -32,6 +41,9 @@ int crPlayerInitialize(void *context, int sampleRate)
     gme->dataBufferSize = 0;
     gme->voiceCount = 0;
     gme->sampleRate = sampleRate;
+    gme->trackCount = 0;
+    gme->isGameMusicArchive = 0;
+    gme->entries = NULL;
 
     return 1;
 }
@@ -40,6 +52,7 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
     int size, int decompressedSize)
 {
     gmeContext *gme = (gmeContext*)context;
+    int i;
 
     /* check if the data is compressed with XZ */
     if ((data[0] == 0xFD) &&
@@ -49,6 +62,7 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
         (data[4] == 'Z') &&
         decompressedSize)
     {
+        /* compressed with XZ-embedded; decompress */
         gme->dataBufferSize = decompressedSize;
         gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
         if (!gme->dataBuffer)
@@ -61,11 +75,49 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
     }
     else
     {
+        /* not compressed; move to internal buffer */
         gme->dataBufferSize = size;
         gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
         if (!gme->dataBuffer)
             return 0;
         memcpy(gme->dataBuffer, data, gme->dataBufferSize);
+    }
+
+    /* check if this is a .gamemusic file */
+    if (strncmp((char *)gme->dataBuffer, "Game Music Files", 16) == 0)
+    {
+        /* it's a .gamemusic file; parse out a table of offsets and sizes */
+        gme->isGameMusicArchive = 1;
+        gme->trackCount =
+            (gme->dataBuffer[16] << 24) |
+            (gme->dataBuffer[17] << 16) |
+            (gme->dataBuffer[18] <<  8) |
+            (gme->dataBuffer[19] <<  0);
+        gme->entries = (fileEntry*)malloc(gme->trackCount * sizeof(fileEntry));
+        if (!gme->entries)
+        {
+            return 0;
+        }
+
+        /* gather up the offsets */
+        for (i = 0; i < gme->trackCount; i++)
+        {
+            gme->entries[i].offset =
+                (gme->dataBuffer[20 + i * 4 + 0] << 24) |
+                (gme->dataBuffer[20 + i * 4 + 1] << 16) |
+                (gme->dataBuffer[20 + i * 4 + 2] <<  8) |
+                (gme->dataBuffer[20 + i * 4 + 3] <<  0);
+        }
+
+        /* derive the sizes based on the offsets */
+        for (i = 0; i < gme->trackCount - 1; i++)
+        {
+            gme->entries[i].size =
+                gme->entries[i + 1].offset - gme->entries[i].offset;
+        }
+        /* last size takes data size into account */
+        gme->entries[gme->trackCount - 1].size =
+            gme->dataBufferSize - gme->entries[gme->trackCount - 1].offset;
     }
 
     return 1;
@@ -75,15 +127,33 @@ int crPlayerSetTrack(void *context, int track)
 {
     gmeContext *gme = (gmeContext*)context;
     gme_err_t status = NULL;
+    int trueTrack;
+    fileEntry *entry;
 
     /* initialize the engine */
-    status = gme_open_data(gme->dataBuffer, gme->dataBufferSize,
-        &gme->emu, gme->sampleRate);
-    if (status)
-        return 0;
+    if (gme->isGameMusicArchive)
+    {
+        /* when it's time to start a track, it's always going to be
+         * track 0 (first and only) of a single-song file */
+        trueTrack = 0;
+        entry = &gme->entries[track];
+        status = gme_open_data(gme->dataBuffer + entry->offset, entry->size,
+            &gme->emu, gme->sampleRate);
+        if (status)
+            return 0;
+    }
+    else
+    {
+        trueTrack = track;
+        status = gme_open_data(gme->dataBuffer, gme->dataBufferSize,
+            &gme->emu, gme->sampleRate);
+        if (status)
+            return 0;
+        gme->trackCount = gme_track_count(gme->emu);
+    }
 
     /* set the track */
-    status = gme_start_track(gme->emu, track);
+    status = gme_start_track(gme->emu, trueTrack);
     if (!status)
     {
         gme->voiceCount = gme_voice_count(gme->emu);
@@ -141,6 +211,10 @@ void crPlayerCleanup(void *context)
     if (gme->dataBuffer)
         free(gme->dataBuffer);
     gme->dataBuffer = NULL;
+
+    if (gme->entries)
+        free(gme->entries);
+    gme->entries = NULL;
 
     if (gme->emu)
         gme_delete(gme->emu);
