@@ -27,6 +27,7 @@ var FRAMERATE_DELTA = 1.0/30;
 
 var playerFile;
 var currentTrack = 2;
+var fileDecompressedSize;
 var musicResponseBytes;
 var playerContext;
 var isPaused = false;
@@ -68,7 +69,7 @@ function crPlayerIsReady()
     musicBytes.set(new Uint8Array(musicResponseBytes));
 
     /* load the file into the player */
-    ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length);
+    ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, fileDecompressedSize);
 //    console.log("_crPlayerLoadFile() returned " + ret);
 
     /* set the initial track */
@@ -242,10 +243,11 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
-function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady)
+function initializeCrPlayer(player, fileList, decompressedSize, hostCanvas, playerIsReady)
 {
     playerFile = player[0];
     playerIsReadyCallback = playerIsReady;
+    fileDecompressedSize = decompressedSize;
     canvas = hostCanvas;
 
     /* load the music file first */

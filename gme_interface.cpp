@@ -5,6 +5,7 @@
 
 #include "gme.h"
 #include "player_interface.h"
+#include "xzdec.h"
 
 #define SAMPLES_PER_FRAME 2
 
@@ -36,15 +37,36 @@ int crPlayerInitialize(void *context, int sampleRate)
 }
 
 int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
-    int size)
+    int size, int decompressedSize)
 {
     gmeContext *gme = (gmeContext*)context;
 
-    gme->dataBufferSize = size;
-    gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
-    if (!gme->dataBuffer)
-        return 0;
-    memcpy(gme->dataBuffer, data, gme->dataBufferSize);
+    /* check if the data is compressed with XZ */
+    if ((data[0] == 0xFD) &&
+        (data[1] == '7') &&
+        (data[2] == 'z') &&
+        (data[3] == 'X') &&
+        (data[4] == 'Z') &&
+        decompressedSize)
+    {
+        gme->dataBufferSize = decompressedSize;
+        gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
+        if (!gme->dataBuffer)
+            return 0;
+        if (!xz_decompress(data, size, gme->dataBuffer, gme->dataBufferSize))
+        {
+            free(gme->dataBuffer);
+            return 0;
+        }
+    }
+    else
+    {
+        gme->dataBufferSize = size;
+        gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
+        if (!gme->dataBuffer)
+            return 0;
+        memcpy(gme->dataBuffer, data, gme->dataBufferSize);
+    }
 
     return 1;
 }

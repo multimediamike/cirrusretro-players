@@ -9,7 +9,8 @@
 
 var nowPlaying = false;
 var player = ["/final/cr-gme-nsf.js"];
-var fileList = ["/music-samples/akumajou-densetsu.nsf"];
+var fileList = ["/music-samples/akumajou-densetsu.nsf.xz"];
+var decompressedSize = 54260;
 
 function toggleSound()
 {
@@ -31,7 +32,7 @@ function toggleSound()
 function pageLoaded()
 {
     var canvas = document.querySelector('.visualizer');
-    initializeCrPlayer(player, fileList, canvas, playerIsReady);
+    initializeCrPlayer(player, fileList, decompressedSize, canvas, playerIsReady);
 }
 
 function playerIsReady()

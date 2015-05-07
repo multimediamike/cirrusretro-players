@@ -120,7 +120,13 @@ var bytes = new Uint8Array(player.HEAPU8.buffer, bytesMalloc, musicBufferBytes.l
 bytes.set(new Uint8Array(musicBufferBytes.buffer));
 
 /* load the file */
-ret = player._crPlayerLoadFile(context.byteOffset, 0, bytes.byteOffset, bytes.length);
+var decompressedSize = 0;
+if ('decompressed-size' in testSpec)
+{
+    decompressedSize = testSpec['decompressed-size'];
+}
+ret = player._crPlayerLoadFile(context.byteOffset, 0, bytes.byteOffset,
+    bytes.length, decompressedSize);
 if (ret != 1)
 {
     console.log("crPlayerLoadFile() returned " + ret);
