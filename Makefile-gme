@@ -7,10 +7,14 @@ else
 
 TARGET:=cr-gme-$(GME_PLAYER).js
 
-CXX:=em++
+CC:=ccache emcc
+CXX:=ccache em++
+LD:=em++
 
 GME_SRCDIR=$(SRCDIR)/gme-source-0.6.0
-VPATH=$(SRCDIR):$(GME_SRCDIR)
+XZ_EMBEDDED_SRCDIR=$(SRCDIR)/xz-embedded
+
+VPATH=$(SRCDIR):$(GME_SRCDIR):$(XZ_EMBEDDED_SRCDIR)
 FINALDIR=$(SRCDIR)/final
 
 EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
@@ -64,25 +68,31 @@ GME_CXX_SOURCES:=gme_interface.cpp \
 	Ym2413_Emu.cpp \
 	Ym2612_Emu.cpp
 
+#XZ-embedded sources
+XZ_EMBEDDED_C_SOURCES:=xzdec.c \
+	xz_crc32.c \
+	xz_dec_lzma2.c \
+	xz_dec_stream.c
+
 # Emscripten gets nervous when C/C++ compile flags reference absolute paths;
 # '-Wno-warn-absolute-paths' tells the compiler not to worry
 GME_CXXFLAGS:=-Wall -Wno-warn-absolute-paths -Os -I$(GME_SRCDIR) -DHAVE_CONFIG_H -I$(GME_SRCDIR)/config-headers/$(GME_PLAYER)
-GME_CXX_OBJECTS:=$(patsubst %.cpp,%.js.o,$(GME_CXX_SOURCES))
+GME_CXX_OBJECTS:=$(patsubst %.cpp,%.o,$(GME_CXX_SOURCES))
 
-%.js.o : %.cpp
+# build rule for GME C++ files
+%.o : %.cpp
 	$(CXX) -o $@ -c $< $(GME_CXXFLAGS)
 
-$(TARGET): $(GME_CXX_OBJECTS)
-	$(CXX) -o $(TARGET) $^ --memory-init-file 0 $(GME_CXXFLAGS) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
+XZ_EMBEDDED_C_FLAGS:= -Wall -Wno-warn-absolute-paths -Os -I$(XZ_EMBEDDED_SRCDIR)
+XZ_EMBEDDED_C_OBJECTS:=$(patsubst %.c,%.o,$(XZ_EMBEDDED_C_SOURCES))
+
+# build rule for XZ-embedded C files
+%.o : %.c
+	$(CC) -o $@ -c $< $(XZ_EMBEDDED_C_FLAGS)
+
+$(TARGET): $(GME_CXX_OBJECTS) $(XZ_EMBEDDED_C_OBJECTS)
+	$(LD) -o $(TARGET) $^ --memory-init-file 0 -Wall -Os -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
 	mkdir -p $(FINALDIR)
 	cp $(TARGET)* $(FINALDIR)
-
-# dependencies
-DEPS:=$(subst .cpp,.d,$(GME_CXX_SOURCES))
-include $(DEPS)
-
-%.d: %.cpp
-	$(CXX) -MM $(GME_CXXFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 
 endif
