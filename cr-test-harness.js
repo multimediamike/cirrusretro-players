@@ -36,62 +36,6 @@ var musicBuffer;
 var seconds;
 var currentChannelDisabled = -1;
 
-function writeSamples()
-{
-    var j;
-
-    /* check if it's time to complete the test */
-    if (seconds === 0)
-    {
-        /* finished writing the file */
-        outStream.end();
-
-        /* checksum the file */
-        var md5sum = crypto.createHash("md5");
-        var output = fs.readFileSync(outputFile);
-        md5sum.update(output);
-        var digest = md5sum.digest('hex');
-        if (digest != testSpec['expected-md5'])
-        {
-            console.log("md5 hash of output differs");
-            console.log(" expected: " + testSpec['expected-md5']);
-            console.log("      got: " + digest);
-            process.exit(1);
-        }
-
-        /* delete the output file unless instructed otherwise */
-        if (!keepOutput)
-        {
-            fs.unlinkSync(outputFile);
-        }
-
-        /* cleanly shutdown the player */
-        player._crPlayerCleanup(context.byteOffset);
-        return;
-    }
-
-    ret = player._crPlayerGenerateStereoFrames(context.byteOffset, samples.byteOffset, SAMPLE_RATE);
-    if (ret != 1)
-    {
-        console.log("crPlayerGenerateStereoFrames() returned " + ret);
-        process.exit(1);
-    }
-    seconds -= 1;
-    for (j = 0; j < samplesCount; j++)
-    {
-        outBuffer.writeInt16LE(samples[j], j * 2);
-    }
-    outStream.write(outBuffer, null, writeSamples);
-
-    /* deal with channel toggles */
-    if (currentChannelDisabled >= 0)
-    {
-        player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 1);
-    }
-    currentChannelDisabled += 1;
-    player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 0);
-}
-
 if (!fs.existsSync(testSpec['filename']))
 {
     console.log(testSpec['filename'] + " does not exist");
@@ -198,8 +142,56 @@ header.writeUInt8(0x74, 38);  /* t */
 header.writeUInt8(0x61, 39);  /* a */
 header.writeUInt32LE(byteCount, 40);  /* byte count */
 
-var outStream = fs.createWriteStream(outputFile)
-outStream.write(header, null, writeSamples);
+var outBufferSize = SAMPLE_RATE * 2 * 2;
+var outBuffer = new Buffer(outBufferSize);
 
-var outBuffer = new Buffer(SAMPLE_RATE * 2 * 2);
+var wavFd = fs.openSync(outputFile, "w");
+ret = fs.writeSync(wavFd, header, 0, WAV_HEADER_SIZE);
 
+while (seconds > 0)
+{
+    ret = player._crPlayerGenerateStereoFrames(context.byteOffset, samples.byteOffset, SAMPLE_RATE);
+    if (ret != 1)
+    {
+        console.log("crPlayerGenerateStereoFrames() returned " + ret);
+        process.exit(1);
+    }
+    for (j = 0; j < samplesCount; j++)
+    {
+        outBuffer.writeInt16LE(samples[j], j * 2);
+    }
+    fs.writeSync(wavFd, outBuffer, 0, outBufferSize);
+
+    /* deal with channel toggles */
+    if (currentChannelDisabled >= 0)
+    {
+        player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 1);
+    }
+    currentChannelDisabled += 1;
+    player._crPlayerSetVoiceState(context.byteOffset, currentChannelDisabled, 0);
+    seconds -= 1;
+}
+
+ret = fs.closeSync(wavFd);
+
+/* checksum the file */
+var md5sum = crypto.createHash("md5");
+var output = fs.readFileSync(outputFile);
+md5sum.update(output);
+var digest = md5sum.digest('hex');
+if (digest != testSpec['expected-md5'])
+{
+    console.log("md5 hash of output differs");
+    console.log(" expected: " + testSpec['expected-md5']);
+    console.log("      got: " + digest);
+    process.exit(1);
+}
+
+/* delete the output file unless instructed otherwise */
+if (!keepOutput)
+{
+    fs.unlinkSync(outputFile);
+}
+
+/* cleanly shutdown the player */
+player._crPlayerCleanup(context.byteOffset);
