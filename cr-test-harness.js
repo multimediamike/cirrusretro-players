@@ -1,24 +1,17 @@
 var fs = require('fs');
 var crypto = require('crypto');
 
-var outputFile = "out.wav";
 var SAMPLE_RATE = 44100;
 var WAV_HEADER_SIZE = 44;
 
-if (process.argv.length < 3)
+if (process.argv.length < 4)
 {
-    console.log("USAGE: nodejs cr-test-harness.js <test-spec.json> [keep]");
-    console.log("  [keep] optional argument keeps the output wav file");
+    console.log("USAGE: nodejs cr-test-harness.js <test-spec.json> <output.wav>");
     process.exit(1);
 }
 
 var testSpecFilename = process.argv[2];
-var keepOutput = false;
-if (process.argv.length >= 4 && process.argv[3] == "keep")
-{
-    keepOutput = true;
-    console.log("keeping the output file (" + outputFile + ")");
-}
+var outputFile = process.argv[3];
 
 testSpec = JSON.parse(fs.readFileSync(testSpecFilename).toString());
 
@@ -185,12 +178,6 @@ if (digest != testSpec['expected-md5'])
     console.log(" expected: " + testSpec['expected-md5']);
     console.log("      got: " + digest);
     process.exit(1);
-}
-
-/* delete the output file unless instructed otherwise */
-if (!keepOutput)
-{
-    fs.unlinkSync(outputFile);
 }
 
 /* cleanly shutdown the player */
