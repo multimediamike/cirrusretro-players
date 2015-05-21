@@ -2,7 +2,6 @@
 
 import commands
 import glob
-import json
 import multiprocessing
 import tempfile
 
