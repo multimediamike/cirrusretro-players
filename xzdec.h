@@ -1,8 +1,10 @@
 #ifndef _XZDEC_H_
 #define _XZDEC_H_
 
+#ifdef __cplusplus
 extern "C"
 {
+#endif
     /* Decompress a buffer that is compressed with the XZ algorithm.
      * Note that this leverages the XZ-embedded library which can only
      * handle CRC32 integrity checks, e.g., data that was encoded with
@@ -16,6 +18,7 @@ extern "C"
      */
     int xz_decompress(unsigned char *encoded, int encoded_size,
         unsigned char *decoded, int decoded_size);
+#ifdef __cplusplus
 };
-
+#endif
 #endif  // _XZDEC_H_
