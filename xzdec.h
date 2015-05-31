@@ -10,14 +10,18 @@ extern "C"
      * handle CRC32 integrity checks, e.g., data that was encoded with
      * 'xz --check=crc32 ...' which is NOT the default for xz.
      *
-     * Size of decompressed data needs to be known in advance since this
-     * function expects that the 'decoded' buffer will point to enough
-     * space to hold all the data.
+     * Input parameters:
+     *  encoded: pointer to compressed bytestream
+     *  encoded_size: length of the encoded bytestream
+     *
+     * Output parameters:
+     *  decoded: pointer to decompressed bytestream
+     *  decoded_size: pointer to int indicating length of decoded bytestream
      *
      * Returns non-zero on success, 0 on failure.
      */
     int xz_decompress(unsigned char *encoded, int encoded_size,
-        unsigned char *decoded, int decoded_size);
+        unsigned char **decoded, int *decoded_size);
 #ifdef __cplusplus
 };
 #endif

@@ -63,11 +63,7 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
         decompressedSize)
     {
         /* compressed with XZ-embedded; decompress */
-        gme->dataBufferSize = decompressedSize;
-        gme->dataBuffer = (uint8_t*)malloc(gme->dataBufferSize);
-        if (!gme->dataBuffer)
-            return 0;
-        if (!xz_decompress(data, size, gme->dataBuffer, gme->dataBufferSize))
+        if (!xz_decompress(data, size, &gme->dataBuffer, &gme->dataBufferSize))
         {
             free(gme->dataBuffer);
             return 0;
