@@ -49,7 +49,7 @@ int crPlayerInitialize(void *context, int sampleRate)
 }
 
 int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
-    int size, int decompressedSize)
+    int size)
 {
     gmeContext *gme = (gmeContext*)context;
     int i;
@@ -59,8 +59,7 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
         (data[1] == '7') &&
         (data[2] == 'z') &&
         (data[3] == 'X') &&
-        (data[4] == 'Z') &&
-        decompressedSize)
+        (data[4] == 'Z'))
     {
         /* compressed with XZ-embedded; decompress */
         if (!xz_decompress(data, size, &gme->dataBuffer, &gme->dataBufferSize))
