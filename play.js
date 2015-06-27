@@ -26,11 +26,11 @@ var nextTimestamp = 0;
 var FRAMERATE_DELTA = 1.0/30;
 
 var playerFile;
-var currentTrack = 2;
-var fileDecompressedSize;
+var currentTrack = 0;
 var musicResponseBytes;
 var playerContext;
 var isPaused = false;
+var failureState = false;
 var playerIsReadyCallback = null;
 
 function musicLoadEvent(evt)
@@ -47,12 +47,13 @@ function musicLoadEvent(evt)
         /* request the player to be loaded */
         var script = document.createElement('script');
         script.src = playerFile;
+        script.onload = crPlayerIsLoaded;
         document.head.appendChild(script);
     }
 }
 
-/* the player calls this function to signal that it is loaded and ready */
-function crPlayerIsReady()
+/* this function is called when the player is loaded and ready */
+function crPlayerIsLoaded()
 {
     /* create a private context for the player to use */
     var contextSize = _crPlayerContextSize();
@@ -69,18 +70,25 @@ function crPlayerIsReady()
     musicBytes.set(new Uint8Array(musicResponseBytes));
 
     /* load the file into the player */
-    ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, fileDecompressedSize);
+    ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, 0 /* parm needs to go away */);
 //    console.log("_crPlayerLoadFile() returned " + ret);
 
     /* set the initial track */
     ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
 //    console.log("set track returned " + ret);
-//    console.log("song has " + _crPlayerGetVoiceCount(playerContext.byteOffset) + " channels");
+//    console.log("song has " + _crPlayerGetVoiceCount(playerContext.byteOffset) + " voice(s)");
 
     initOscope();
 
     /* tell the host code that the player is ready */
     playerIsReadyCallback();
+}
+
+function setCrTrack(track)
+{
+    currentTrack = track;
+
+    ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
 }
 
 function startAudio()
@@ -113,7 +121,7 @@ function generateAudioCallback(audioProcessingEvent)
     // The output buffer contains the samples that will be modified and played
     var outputBuffer = audioProcessingEvent.outputBuffer;
 
-    if (isPaused)
+    if (isPaused && !failureState)
     {
         /* Loop through the output channels */
         for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
@@ -140,6 +148,12 @@ function generateAudioCallback(audioProcessingEvent)
         samples = new Int16Array(Module.HEAP16.buffer, samplesMalloc, samplesCount);
     }
     var ret = _crPlayerGenerateStereoFrames(playerContext.byteOffset, samples.byteOffset, outputBuffer.length);
+    if (ret == 0)
+    {
+        console.log("failed to generate frames");
+        failureState = true;
+        return;
+    }
 
     /* Loop through the output channels */
     for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
@@ -243,12 +257,12 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
-function initializeCrPlayer(player, fileList, decompressedSize, hostCanvas, playerIsReady)
+function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady, firstTrack)
 {
     playerFile = player[0];
     playerIsReadyCallback = playerIsReady;
-    fileDecompressedSize = decompressedSize;
     canvas = hostCanvas;
+    currentTrack = firstTrack;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();

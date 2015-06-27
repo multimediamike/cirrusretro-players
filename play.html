@@ -8,9 +8,14 @@
 <script>
 
 var nowPlaying = false;
+var currentTrack = 0;
 var player = ["/final/cr-gme-nsf.js"];
-var fileList = ["/music-samples/akumajou-densetsu.nsf.xz"];
-var decompressedSize = 54260;
+var musicUrl = ["/music-samples/akumajou-densetsu.nsf.xz"];
+//var player = ["/final/cr-gme-spc.js"];
+//var musicUrl = ["/music-samples/btbm.gamemusic.xz"];
+//var player = ["/final/cr-vio2sf.js"];
+//var musicUrl = ["/music-samples/jedi-alliance.psfarchive"];
+var trackCount = 5;
 
 function toggleSound()
 {
@@ -29,10 +34,34 @@ function toggleSound()
     }
 }
 
+function prevTrack()
+{
+    if (currentTrack > 0)
+        currentTrack--;
+    else
+        currentTrack = trackCount - 1;
+    setCrTrack(currentTrack);
+    updateTrackDisplay();
+}
+
+function nextTrack()
+{
+    currentTrack = (currentTrack + 1) % trackCount;
+    setCrTrack(currentTrack);
+    updateTrackDisplay();
+}
+
 function pageLoaded()
 {
-    var canvas = document.querySelector('.visualizer');
-    initializeCrPlayer(player, fileList, decompressedSize, canvas, playerIsReady);
+    var canvas = document.getElementById('visualizer');
+    initializeCrPlayer(player, musicUrl, canvas, playerIsReady, currentTrack);
+    updateTrackDisplay();
+}
+
+function updateTrackDisplay()
+{
+    var trackDisplay = document.getElementById('trackDisplay');
+    trackDisplay.innerHTML = "Track " + (currentTrack+1) + " / " + trackCount;
 }
 
 function playerIsReady()
@@ -48,10 +77,17 @@ function playerIsReady()
 
 <body onload="pageLoaded()">
 <h1>Cirrus Retro Player Test Bed</h1>
-<canvas class="visualizer" width="600" height="300"></canvas>
+<canvas id="visualizer" width="600" height="300"></canvas>
 <p>
-<input class="btn" type="button" id="playButton" onclick="toggleSound()" value="---">
+<input type="button" id="prevButton" onclick="prevTrack()" value=" << ">
+<input type="button" id="playButton" onclick="toggleSound()" value="---">
+<input type="button" id="nextButton" onclick="nextTrack()" value=" >> ">
+</p>
+
 <p>
+<div id="trackDisplay">---</div>
+</p>
+
 </body>
 
 </html>
