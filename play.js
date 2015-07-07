@@ -259,7 +259,7 @@ function drawOscope(timestamp)
 
 function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady, firstTrack)
 {
-    playerFile = player[0];
+    playerFile = player;
     playerIsReadyCallback = playerIsReady;
     canvas = hostCanvas;
     currentTrack = firstTrack;
