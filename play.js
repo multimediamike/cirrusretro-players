@@ -257,7 +257,7 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
-function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady, firstTrack)
+function initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTrack)
 {
     playerFile = player;
     playerIsReadyCallback = playerIsReady;
@@ -270,7 +270,7 @@ function initializeCrPlayer(player, fileList, hostCanvas, playerIsReady, firstTr
     musicFile.addEventListener("load", musicLoadEvent);
     musicFile.addEventListener("error", musicLoadEvent);
     musicFile.addEventListener("abort", musicLoadEvent);
-    musicFile.open("GET", fileList[0]);
+    musicFile.open("GET", musicUrl);
     musicFile.responseType = "arraybuffer";
     musicFile.send();
 }
