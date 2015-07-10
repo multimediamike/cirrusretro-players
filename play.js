@@ -33,6 +33,13 @@ var isPaused = false;
 var failureState = false;
 var playerIsReadyCallback = null;
 
+/*
+ * Private function:
+ *  musicLoadEvent(evt)
+ *
+ * This callback is invoked for music progress/load/error events. When
+ * the music is fully loaded, go to the next phase of loading the player.
+ */
 function musicLoadEvent(evt)
 {
     if (evt.type == "progress")
@@ -52,17 +59,39 @@ function musicLoadEvent(evt)
     }
 }
 
-/* this function is called when the player is loaded and ready */
+/*
+ * Private function:
+ *  crPlayerIsLoaded()
+ *
+ * This function is called after various resources (music and players)
+ * have been loaded. It attempts to initialize the player using the music
+ * file.
+ *
+ * Afterwards, it invokes the client's callback. The parameter it passes
+ * to the callback is either null if everything initialized correctly, or
+ * a string to describe what failed.
+ */
 function crPlayerIsLoaded()
 {
     /* create a private context for the player to use */
     var contextSize = _crPlayerContextSize();
+    /* the context size really should be non-zero */
+    if (contextSize <= 0)
+    {
+        playerIsReadyCallback("Problem: context size is " + contextSize);
+        return;
+    }
+
     var contextMalloc = Module._malloc(contextSize);
     playerContext = new Uint8Array(Module.HEAPU8.buffer, contextMalloc, contextSize);
 
     /* initialize the player */
     ret = _crPlayerInitialize(playerContext.byteOffset, audioCtx.sampleRate);
-//    console.log("_crPlayerInitialize() returned " + ret);
+    if (ret != 1)
+    {
+        playerIsReadyCallback("Problem: player initialization returned " + ret);
+        return;
+    }
 
     /* transfer the ArrayBuffer to a UInt8Array */
     var musicBytesMalloc = Module._malloc(musicResponseBytes.byteLength);
@@ -71,17 +100,32 @@ function crPlayerIsLoaded()
 
     /* load the file into the player */
     ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, 0 /* parm needs to go away */);
-//    console.log("_crPlayerLoadFile() returned " + ret);
+    if (ret != 1)
+    {
+        playerIsReadyCallback("Problem: load file operation returned " + ret);
+        return;
+    }
 
     /* set the initial track */
     ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
-//    console.log("set track returned " + ret);
-//    console.log("song has " + _crPlayerGetVoiceCount(playerContext.byteOffset) + " voice(s)");
+    if (ret == 0)
+    {
+        playerIsReadyCallback("Problem: set track operation returned " + ret);
+        return;
+    }
 
+    /* validate that the voice count makes sense */
+    if (_crPlayerGetVoiceCount(playerContext.byteOffset) == 0)
+    {
+        playerIsReadyCallback("Problem: voice count is " + ret);
+        return;
+    }
+
+    /* initialize the visualization */
     initOscope();
 
     /* tell the host code that the player is ready */
-    playerIsReadyCallback();
+    playerIsReadyCallback(null);
 }
 
 function setCrTrack(track)
@@ -91,7 +135,19 @@ function setCrTrack(track)
     ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
 }
 
-function startAudio()
+/*
+ * Public function:
+ *  startCrAudio()
+ *
+ * Start the playback, including the visualizer if enabled.
+ *
+ * Input:
+ *  - none
+ *
+ * Output:
+ *  - undefined
+ */
+function startCrAudio()
 {
     /* script processor drives the dynamic audio generation */
     scriptNode = audioCtx.createScriptProcessor(FRAME_COUNT, 2, 2);
@@ -257,6 +313,22 @@ function drawOscope(timestamp)
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
 
+/*
+ * Public function:
+ *  initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTrack)
+ *
+ * Initialize a Cirrus Retro player.
+ *
+ * Input:
+ *  - player: URL of the player JavaScript
+ *  - musicUrl: URL of the music file to be played
+ *  - hostCanvas: A canvas for visualization, or null for no viz
+ *  - playerIsReady: A callback for when playback is ready to occur
+ *  - firstTrack: 0-based track to start with
+ *
+ * Output:
+ *  undefined: this doesn't fail; it merely sets events in motion
+ */
 function initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTrack)
 {
     playerFile = player;
@@ -275,6 +347,18 @@ function initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTr
     musicFile.send();
 }
 
+/*
+ * Public function:
+ *  enableCrPlayerAudio(enabled)
+ *
+ * Play/pause function for the player audio.
+ *
+ * Input:
+ *  - enabled: false to pause audio; true to enable audio
+ *
+ * Output:
+ *  - undefined
+ */
 function enableCrPlayerAudio(enabled)
 {
     if (enabled)

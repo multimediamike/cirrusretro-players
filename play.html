@@ -64,11 +64,17 @@ function updateTrackDisplay()
     trackDisplay.innerHTML = "Track " + (currentTrack+1) + " / " + trackCount;
 }
 
-function playerIsReady()
+function playerIsReady(statusMessage)
 {
+    if (statusMessage)
+    {
+        console.log("Cirrus Retro player reported:");
+        console.log(statusMessage);
+        return;
+    }
     playButton.value = "Pause";
     nowPlaying = true;
-    startAudio();
+    startCrAudio();
 }
 
 </script>
