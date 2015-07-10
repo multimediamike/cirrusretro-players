@@ -19,6 +19,10 @@ FINALDIR=$(SRCDIR)/final
 
 EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
 
+# the amount of memory that the Emscripten process gets to use
+MEGABYTES=32
+TOTAL_MEMORY=$(shell echo $(MEGABYTES)\*1024\*1024 | bc)
+
 # GME source files, plus the Cirrus Retro glue file
 GME_CXX_SOURCES:=gme_interface.cpp \
 	Ay_Apu.cpp \
@@ -91,7 +95,7 @@ XZ_EMBEDDED_C_OBJECTS:=$(patsubst %.c,%.o,$(XZ_EMBEDDED_C_SOURCES))
 	$(CC) -o $@ -c $< $(XZ_EMBEDDED_C_FLAGS)
 
 $(TARGET): $(GME_CXX_OBJECTS) $(XZ_EMBEDDED_C_OBJECTS)
-	$(LD) -o $(TARGET) $^ --memory-init-file 0 -Wall -Os -s EXPORTED_FUNCTIONS=$(EXPORT_LIST)
+	$(LD) -o $(TARGET) $^ --memory-init-file 0 -Wall -Os -s EXPORTED_FUNCTIONS=$(EXPORT_LIST) -s TOTAL_MEMORY=$(TOTAL_MEMORY)
 	mkdir -p $(FINALDIR)
 	cp $(TARGET)* $(FINALDIR)
 
