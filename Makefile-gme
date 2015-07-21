@@ -20,7 +20,7 @@ FINALDIR=$(SRCDIR)/final
 EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
 
 # the amount of memory that the Emscripten process gets to use
-MEGABYTES=32
+MEGABYTES=48
 TOTAL_MEMORY=$(shell echo $(MEGABYTES)\*1024\*1024 | bc)
 
 # GME source files, plus the Cirrus Retro glue file
