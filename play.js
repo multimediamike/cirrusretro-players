@@ -19,11 +19,16 @@ var canvas = null;
 var canvasCtx;
 var canvasWidth;
 var canvasHeight;
-var color = 0;
 var audioStarted = false;
 var firstAudioTimestamp = 0;
 var nextTimestamp = 0;
 var FRAMERATE_DELTA = 1.0/30;
+var currentRed = 250;
+var currentGreen = 250;
+var currentBlue = 250;
+var rInc = -1;
+var gInc = -2;
+var bInc = -3;
 
 var playerFile;
 var currentTrack = 0;
@@ -249,7 +254,7 @@ function initOscope()
     canvasHeight = canvasCtx.canvas.height;
 
     /* wipe canvas */
-    canvasCtx.fillStyle = 'rgb(0, ' + color + ', 0)';
+    canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
     /* dividing center line */
     canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
@@ -277,7 +282,7 @@ function drawOscope(timestamp)
         return;
     }
 
-    canvasCtx.fillStyle = 'rgb(0, ' + color + ', 0)';
+    canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     canvasCtx.lineWidth = 1;
@@ -287,6 +292,8 @@ function drawOscope(timestamp)
     canvasCtx.lineTo(canvasWidth, canvasHeight / 2);
     canvasCtx.stroke();
 
+    canvasCtx.beginPath();
+    canvasCtx.strokeStyle = 'rgb(' + currentRed + ', ' + currentGreen + ', ' + currentBlue + ')';
     var segment = Math.round((audioCtx.currentTime - firstAudioTimestamp) * vizBufferSize % vizBufferSize);
     var divisor = 32768.0 / (canvasHeight / 4);
     for (var i = 0; i < channels; i++)
@@ -309,6 +316,17 @@ function drawOscope(timestamp)
         }
         canvasCtx.stroke();
     }
+
+    /* play with colors */
+    if (currentRed < 64 || currentRed > 250)
+        rInc *= -1;
+    if (currentGreen < 64 || currentGreen > 250)
+        gInc *= -1;
+    if (currentBlue < 64 || currentBlue > 250)
+        bInc *= -1;
+    currentRed += rInc;
+    currentGreen += gInc;
+    currentBlue += bInc;
 
     nextTimestamp = timestamp + FRAMERATE_DELTA;
 }
