@@ -54,7 +54,7 @@ function nextTrack()
 function pageLoaded()
 {
     var canvas = document.getElementById('visualizer');
-    initializeCrPlayer(player, musicUrl, canvas, playerIsReady, currentTrack);
+    initializeCrPlayer(player, musicUrl, canvas, loadProgress, playerIsReady, currentTrack);
     updateTrackDisplay();
 }
 
@@ -62,6 +62,11 @@ function updateTrackDisplay()
 {
     var trackDisplay = document.getElementById('trackDisplay');
     trackDisplay.innerHTML = "Track " + (currentTrack+1) + " / " + trackCount;
+}
+
+function loadProgress(loadedBytes, totalBytes)
+{
+    console.log("load progress: loaded " + loadedBytes + " / " + totalBytes);
 }
 
 function playerIsReady(statusMessage)

@@ -37,6 +37,7 @@ var playerContext;
 var isPaused = false;
 var failureState = false;
 var playerIsReadyCallback = null;
+var loadProgressCallback = null;
 
 /*
  * Private function:
@@ -49,7 +50,10 @@ function musicLoadEvent(evt)
 {
     if (evt.type == "progress")
     {
-//        console.log("progress event: " + evt.loaded + " / " + evt.total);
+        if (loadProgressCallback)
+        {
+            loadProgressCallback(evt.loaded, evt.total);
+        }
     }
     else if (evt.type == "load")
     {
@@ -347,10 +351,11 @@ function drawOscope(timestamp)
  * Output:
  *  undefined: this doesn't fail; it merely sets events in motion
  */
-function initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTrack)
+function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, firstTrack)
 {
     playerFile = player;
     playerIsReadyCallback = playerIsReady;
+    loadProgressCallback = loadProgress
     canvas = hostCanvas;
     currentTrack = firstTrack;
 
