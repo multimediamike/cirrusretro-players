@@ -38,6 +38,8 @@ var isPaused = false;
 var failureState = false;
 var playerIsReadyCallback = null;
 var loadProgressCallback = null;
+var tickCallback = null;
+var tickCountdown;  /* when this goes below 0, a second has elapsed */
 
 /*
  * Private function:
@@ -140,6 +142,7 @@ function crPlayerIsLoaded()
 function setCrTrack(track)
 {
     crCurrentTrack = track;
+    tickCountdown = audioCtx.sampleRate;
 
     ret = _crPlayerSetTrack(playerContext.byteOffset, crCurrentTrack);
 }
@@ -218,6 +221,15 @@ function generateAudioCallback(audioProcessingEvent)
         console.log("failed to generate frames");
         failureState = true;
         return;
+    }
+
+    /* tick accounting */
+    tickCountdown -= outputBuffer.length;
+    if (tickCountdown < 0)
+    {
+        tickCountdown += audioCtx.sampleRate;
+        if (tick)
+            tick();
     }
 
     /* Loop through the output channels */
@@ -345,19 +357,25 @@ function drawOscope(timestamp)
  *  - player: URL of the player JavaScript
  *  - musicUrl: URL of the music file to be played
  *  - hostCanvas: A canvas for visualization, or null for no viz
+ *  - loadProgress: A callback to indicate how much music has loaded; has
+ *     2 parameters: (bytesLoaded, bytesTotal)
  *  - playerIsReady: A callback for when playback is ready to occur
+ *  - tick: A callback that is called once per second during playback
  *  - firstTrack: 0-based track to start with
  *
  * Output:
  *  undefined: this doesn't fail; it merely sets events in motion
  */
-function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, firstTrack)
+function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
 {
     playerFile = player;
     playerIsReadyCallback = playerIsReady;
     loadProgressCallback = loadProgress
+    tickCallback = tick;
     canvas = hostCanvas;
     crCurrentTrack = firstTrack;
+
+    tickCountdown = audioCtx.sampleRate;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();

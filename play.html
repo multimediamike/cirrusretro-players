@@ -16,6 +16,7 @@ var musicUrl = "/music-samples/akumajou-densetsu.nsf.xz";
 //var player = "/final/cr-vio2sf.js";
 //var musicUrl = "/music-samples/jedi-alliance.psfarchive";
 var trackCount = 5;
+var timer = 0;
 
 function toggleSound()
 {
@@ -40,6 +41,7 @@ function prevTrack()
         currentTrack--;
     else
         currentTrack = trackCount - 1;
+    timer = 0;
     setCrTrack(currentTrack);
     updateTrackDisplay();
 }
@@ -47,6 +49,7 @@ function prevTrack()
 function nextTrack()
 {
     currentTrack = (currentTrack + 1) % trackCount;
+    timer = 0;
     setCrTrack(currentTrack);
     updateTrackDisplay();
 }
@@ -54,7 +57,7 @@ function nextTrack()
 function pageLoaded()
 {
     var canvas = document.getElementById('visualizer');
-    initializeCrPlayer(player, musicUrl, canvas, loadProgress, playerIsReady, currentTrack);
+    initializeCrPlayer(player, musicUrl, canvas, loadProgress, playerIsReady, tick, currentTrack);
     updateTrackDisplay();
 }
 
@@ -80,6 +83,11 @@ function playerIsReady(statusMessage)
     playButton.value = "Pause";
     nowPlaying = true;
     startCrAudio();
+}
+
+function tick()
+{
+    timer++;
 }
 
 </script>
