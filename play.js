@@ -31,7 +31,7 @@ var gInc = -2;
 var bInc = -3;
 
 var playerFile;
-var currentTrack = 0;
+var crCurrentTrack = 0;
 var musicResponseBytes;
 var playerContext;
 var isPaused = false;
@@ -116,7 +116,7 @@ function crPlayerIsLoaded()
     }
 
     /* set the initial track */
-    ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
+    ret = _crPlayerSetTrack(playerContext.byteOffset, crCurrentTrack);
     if (ret == 0)
     {
         playerIsReadyCallback("Problem: set track operation returned " + ret);
@@ -139,9 +139,9 @@ function crPlayerIsLoaded()
 
 function setCrTrack(track)
 {
-    currentTrack = track;
+    crCurrentTrack = track;
 
-    ret = _crPlayerSetTrack(playerContext.byteOffset, currentTrack);
+    ret = _crPlayerSetTrack(playerContext.byteOffset, crCurrentTrack);
 }
 
 /*
@@ -357,7 +357,7 @@ function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIs
     playerIsReadyCallback = playerIsReady;
     loadProgressCallback = loadProgress
     canvas = hostCanvas;
-    currentTrack = firstTrack;
+    crCurrentTrack = firstTrack;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();
