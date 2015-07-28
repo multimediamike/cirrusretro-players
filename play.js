@@ -228,8 +228,8 @@ function generateAudioCallback(audioProcessingEvent)
     if (tickCountdown < 0)
     {
         tickCountdown += audioCtx.sampleRate;
-        if (tick)
-            tick();
+        if (tickCallback)
+            tickCallback();
     }
 
     /* Loop through the output channels */
