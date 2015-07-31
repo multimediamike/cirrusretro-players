@@ -126,7 +126,8 @@ function crPlayerIsLoaded()
     }
 
     /* validate that the voice count makes sense */
-    if (_crPlayerGetVoiceCount(playerContext.byteOffset) == 0)
+    ret = _crPlayerGetVoiceCount(playerContext.byteOffset);
+    if (ret == 0)
     {
         playerIsReadyCallback("Problem: voice count is " + ret);
         return;
