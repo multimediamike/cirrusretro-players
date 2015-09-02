@@ -12,6 +12,7 @@ var source;  /* AudioBufferSourceNode */
 var FRAME_COUNT = 4096;
 
 /* visualization */
+var vizEnabled = true;
 var vizBufferSize = audioCtx.sampleRate * channels;
 var vizBuffer = new Int16Array(vizBufferSize);
 var vizBufferIndex = 0;
@@ -283,7 +284,7 @@ function initOscope()
 
 function drawOscope(timestamp)
 {
-    if (!canvas || isPaused)
+    if (!vizEnabled || !canvas || isPaused)
         return;
 
     timestamp /= 1000;
@@ -310,6 +311,7 @@ function drawOscope(timestamp)
     canvasCtx.stroke();
 
     canvasCtx.beginPath();
+    canvasCtx.lineWidth = 2;
     canvasCtx.strokeStyle = 'rgb(' + currentRed + ', ' + currentGreen + ', ' + currentBlue + ')';
     var segment = Math.round((audioCtx.currentTime - firstAudioTimestamp) * vizBufferSize % vizBufferSize);
     var divisor = 32768.0 / (canvasHeight / 4);
@@ -411,5 +413,31 @@ function enableCrPlayerAudio(enabled)
     else
     {
         isPaused = true;
+    }
+}
+
+/*
+ * Public function:
+ *  enableCrPlayerViz(enabled)
+ *
+ * Enable/disable the audio visualization.
+ *
+ * Input:
+ *  - enabled: true to display viz; false to disable display
+ *
+ * Output:
+ *  - undefined
+ */
+function enableCrPlayerViz(enabled)
+{
+    vizEnabled = enabled;
+    if (vizEnabled)
+    {
+        requestAnimationFrame(drawOscope);
+    }
+    else
+    {
+        canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+        canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
 }
