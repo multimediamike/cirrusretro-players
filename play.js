@@ -1,5 +1,7 @@
 /* find the audio context */
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+/* for volume control */
+var gainNode = audioCtx.createGain();
 
 /* other variables pertinent to audio processing */
 var secondsPerNode = 1.0;
@@ -173,10 +175,15 @@ function startCrAudio()
     /* set the buffer in the AudioBufferSourceNode */
     source.buffer = myArrayBuffer;
 
-    /* connect the AudioBufferSourceNode to ScriptProcessorNode, and the
-     * ScriptProcessorNode to the audio context destination */
+    /* connect the nodes:
+         AudioBufferSourceNode -> GainNode
+         GainNode -> ScriptProcessorNode
+         ScriptProcessorNode -> audio context destination
+    */
+    gainNode.gain.value = 1.0;
     source.connect(scriptNode);
-    scriptNode.connect(audioCtx.destination);
+    scriptNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
 
     vizBufferIndex = 0;
     isPaused = false;
@@ -440,4 +447,26 @@ function enableCrPlayerViz(enabled)
         canvasCtx.fillStyle = 'rgb(0, 0, 0)';
         canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
+}
+
+/*
+ * Public function:
+ *  setCrColume(volumeLevel)
+ *
+ * Set the audio output volume.
+ *
+ * Input:
+ *  - volumeLevel: volume on a scale of 0..255
+ *
+ * Output:
+ *  - undefined
+ */
+function setCrVolume(volumeLevel)
+{
+    if (volumeLevel < 1)
+        volumeLevel = 1;
+    else if (volumeLevel > 255)
+        volumeLevel = 255;
+
+    gainNode.gain.value = volumeLevel / 255.0;
 }
