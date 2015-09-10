@@ -372,7 +372,7 @@ function drawOscope(timestamp)
 
 /*
  * Public function:
- *  initializeCrPlayer(player, musicUrl, hostCanvas, playerIsReady, firstTrack)
+ *  initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
  *
  * Initialize a Cirrus Retro player.
  *
