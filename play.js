@@ -43,6 +43,7 @@ var playerIsReadyCallback = null;
 var loadProgressCallback = null;
 var tickCallback = null;
 var tickCountdown;  /* when this goes below 0, a second has elapsed */
+var voiceCount = 0;
 
 /*
  * Private function:
@@ -129,10 +130,10 @@ function crPlayerIsLoaded()
     }
 
     /* validate that the voice count makes sense */
-    ret = _crPlayerGetVoiceCount(playerContext.byteOffset);
-    if (ret == 0)
+    voiceCount = _crPlayerGetVoiceCount(playerContext.byteOffset);
+    if (voiceCount == 0)
     {
-        playerIsReadyCallback("Problem: voice count is " + ret);
+        playerIsReadyCallback("Problem: voice count is " + voiceCount);
         return;
     }
 
@@ -176,9 +177,9 @@ function startCrAudio()
     source.buffer = myArrayBuffer;
 
     /* connect the nodes:
-         AudioBufferSourceNode -> GainNode
-         GainNode -> ScriptProcessorNode
-         ScriptProcessorNode -> audio context destination
+         AudioBufferSourceNode -> ScriptProcessorNode
+         ScriptProcessorNode -> GainNode
+         GainNode -> audio context destination
     */
     gainNode.gain.value = 1.0;
     source.connect(scriptNode);
@@ -192,10 +193,13 @@ function startCrAudio()
     source.start(0);
 }
 
-/* callback for generating more audio */
+/*
+ * Private function:
+ *  callback for generating more audio
+ */
 function generateAudioCallback(audioProcessingEvent)
 {
-    // The output buffer contains the samples that will be modified and played
+    /* The output buffer contains the samples that will be modified and played */
     var outputBuffer = audioProcessingEvent.outputBuffer;
 
     if (isPaused && !failureState)
@@ -269,6 +273,11 @@ function generateAudioCallback(audioProcessingEvent)
     }
 }
 
+/*
+ * Private function:
+ *  Initialize the oscilloscope based on the canvas that the module
+ *  was initialized with.
+ */
 function initOscope()
 {
     if (!canvas)
@@ -289,6 +298,10 @@ function initOscope()
     canvasCtx.stroke();
 }
 
+/*
+ * Private function:
+ *  Draw a frame of the oscilloscope visualization.
+ */
 function drawOscope(timestamp)
 {
     if (!vizEnabled || !canvas || isPaused)
@@ -469,4 +482,58 @@ function setCrVolume(volumeLevel)
         volumeLevel = 255;
 
     gainNode.gain.value = volumeLevel / 255.0;
+}
+
+/*
+ * Public function:
+ *  getCrVoiceInfo()
+ *
+ * Input:
+ *  - None
+ *
+ * Output:
+ *  - Returns an object with the following attributes:
+ *     canBeToggled: a Boolean indicating whether voices can be toggled
+ *     voiceCount: the number of voices comprising the music
+ */
+function getCrVoiceInfo()
+{
+    var info = Object();
+
+    info.canBeToggled = _crPlayerVoicesCanBeToggled(playerContext.byteOffset);
+    info.voiceCount = _crPlayerGetVoiceCount(playerContext.byteOffset);
+
+    return info;
+}
+
+/*
+ * Public function:
+ *  getCrVoiceName()
+ *
+ * Input:
+ *  - voice number, indexed from 0
+ *
+ * Output:
+ *  - a string containing the voice name
+ */
+function getCrVoiceName(voice)
+{
+    return Pointer_stringify(_crPlayerGetVoiceName(playerContext.byteOffset, voice));
+}
+
+/*
+ * Public function:
+ *  setCrVoiceState(voice, enabled)
+ *
+ * Input:
+ *  - voice: a voice number, indexed from 0
+ *  - enabled: Boolean to enable the voice
+ *
+ * Output:
+ *  - undefined
+ */
+function setCrVoiceState(voice, enabled)
+{
+    if (voice >= 0 && voice < voiceCount)
+        _crPlayerSetVoiceState(playerContext.byteOffset, voice, enabled ? 1 : 0);
 }
