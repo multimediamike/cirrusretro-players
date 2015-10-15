@@ -163,7 +163,7 @@ int crPlayerSetTrack(void *context, int track)
     if (!dataCopy)
         return 0;
     memcpy(dataCopy, &vio2sf->dataBuffer[offset], size);
-    if (!xsf_start(dataCopy, size))
+    if (!xsf_start(dataCopy, size, vio2sf->sampleRate))
         return 0;  /* initialization failed */
     else
         return 2;  /* initialized; indicate stereo */

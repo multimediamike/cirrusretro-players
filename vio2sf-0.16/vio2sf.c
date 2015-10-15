@@ -16,6 +16,8 @@
 
 volatile BOOL execute = FALSE;
 
+unsigned int global_2sf_sample_rate = 44100;
+
 static struct
 {
   unsigned char *rom;
@@ -656,13 +658,15 @@ SoundInterface_struct *SNDCoreList[] = {
 static struct armcpu_ctrl_iface *arm9_ctrl_iface = 0;
 static struct armcpu_ctrl_iface *arm7_ctrl_iface = 0;
 
-int xsf_start(void *pfile, unsigned bytes)
+int xsf_start(void *pfile, unsigned bytes, unsigned int sample_rate)
 {
   int frames = xsf_tagget_int("_frames", pfile, bytes, -1);
   int clockdown = xsf_tagget_int("_clockdown", pfile, bytes, 0);
   sndifwork.sync_type = xsf_tagget_int("_vio2sf_sync_type", pfile, bytes, 0);
   sndifwork.arm9_clockdown_level = xsf_tagget_int("_vio2sf_arm9_clockdown_level", pfile, bytes, clockdown);
   sndifwork.arm7_clockdown_level = xsf_tagget_int("_vio2sf_arm7_clockdown_level", pfile, bytes, clockdown);
+
+  global_2sf_sample_rate = sample_rate;
 
   sndifwork.xfs_load = 0;
   if (!load_psf(pfile, bytes))
@@ -815,16 +819,16 @@ int xsf_gen(void *pbuffer, unsigned samples)
       if (remainbytes == 0)
 	{
 
-#define HBASE_CYCLES 33509300.322234
-#define VBASE_CYCLES (((double)HBASE_CYCLES) / 100)
-#define HSAMPLES ((u32)((44100.0 * 6 * (99 + 256)) / HBASE_CYCLES))
-#define VSAMPLES ((u32)((44100.0 * 6 * (99 + 256) * 263) / HBASE_CYCLES))
+          double HBASE_CYCLES = 33509300.322234;
+          double VBASE_CYCLES = (((double)HBASE_CYCLES) / 100);
+          unsigned int HSAMPLES = ((u32)(((global_2sf_sample_rate * 1.0) * 6 * (99 + 256)) / HBASE_CYCLES));
+          unsigned int VSAMPLES = ((u32)(((global_2sf_sample_rate * 1.0) * 6 * (99 + 256) * 263) / HBASE_CYCLES));
 
 	  int numsamples;
 	  if (sndifwork.sync_type == 1)
 	    {
 	      /* vsync */
-	      sndifwork.cycles += (441 * 6 * (99 + 256) * 263);
+	      sndifwork.cycles += ((global_2sf_sample_rate / 100) * 6 * (99 + 256) * 263);
 	      if (sndifwork.cycles >= (u32)(VBASE_CYCLES * (VSAMPLES + 1)))
 		{
 		  numsamples = (VSAMPLES + 1);
@@ -840,7 +844,7 @@ int xsf_gen(void *pbuffer, unsigned samples)
 	  else
 	    {
 	      /* hsync */
-	      sndifwork.cycles += (44100 * 6 * (99 + 256));
+	      sndifwork.cycles += (global_2sf_sample_rate * 6 * (99 + 256));
 	      if (sndifwork.cycles >= (u32)(HBASE_CYCLES * (HSAMPLES + 1)))
 		{
 		  numsamples = (HSAMPLES + 1);

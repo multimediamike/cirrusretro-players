@@ -39,6 +39,8 @@ enum
 
 #define VOL_SHIFT 10
 
+extern unsigned int global_2sf_sample_rate;
+
 typedef struct
 {
 	int id;
@@ -216,7 +218,7 @@ void SPU_KeyOn(int channel)
 
 static INLINE void adjust_channel_timer(SChannel *ch)
 {
-	ch->inc = (((double)33512000) / (44100 * 2)) / (double)(0x10000 - ch->timer);
+	ch->inc = (((double)33512000) / (global_2sf_sample_rate * 2)) / (double)(0x10000 - ch->timer);
 }
 
 static int check_valid(u32 addr, u32 size)

@@ -12,7 +12,6 @@
 #define AO_FAIL_DECOMPRESSION		-1
 
 #define MAX_DISP_INFO_LENGTH		256
-#define AUDIO_RATE					(44100)
 
 enum
 {
