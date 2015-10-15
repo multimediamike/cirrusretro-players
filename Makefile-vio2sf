@@ -1,0 +1,65 @@
+# build architecture inspired by this page:
+# http://make.mad-scientist.net/papers/multi-architecture-builds/
+
+ifeq ($(notdir $(CURDIR)), cirrusretro-players)
+include target-vio2sf.mk
+else
+
+TARGET:=cr-vio2sf.js
+
+CC:=ccache emcc
+LD:=emcc
+
+OPT_LEVEL:=-Os
+
+VIO2SF_SRCDIR=$(SRCDIR)/vio2sf-0.16
+XZ_EMBEDDED_SRCDIR=$(SRCDIR)/xz-embedded
+
+VPATH=$(SRCDIR):$(VIO2SF_SRCDIR):$(XZ_EMBEDDED_SRCDIR)
+FINALDIR=$(SRCDIR)/final
+
+#EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup', '_main']"
+EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup']"
+
+# VIO2SF source files, plus the Cirrus Retro glue file
+VIO2SF_C_SOURCES:= \
+	vio2sf_interface.c \
+	corlett.c \
+	vio2sf.c \
+	FIFO.c \
+	GPU.c \
+	MMU.c \
+	NDSSystem.c \
+	SPU.c \
+	arm_instructions.c \
+	armcpu.c \
+	bios.c \
+	cp15.c \
+	matrix.c \
+	mc.c \
+	thumb_instructions.c
+
+# XZ-embedded sources
+XZ_EMBEDDED_C_SOURCES:=xzdec.c \
+	xz_crc32.c \
+	xz_dec_lzma2.c \
+	xz_dec_stream.c
+
+# Emscripten gets nervous when C/C++ compile flags reference absolute paths;
+# '-Wno-warn-absolute-paths' tells the compiler not to worry
+CFLAGS:= -Wall -Wno-warn-absolute-paths $(OPT_LEVEL) -I$(SRCDIR) -I$(VIO2SF_SRCDIR) -I$(XZ_EMBEDDED_SRCDIR) -s ASSERTIONS=2
+
+VIO2SF_C_OBJECTS:=$(patsubst %.c,%.o,$(VIO2SF_C_SOURCES))
+XZ_EMBEDDED_C_OBJECTS:=$(patsubst %.c,%.o,$(XZ_EMBEDDED_C_SOURCES))
+PSFLIB_C_OBJECTS:=$(patsubst %.c,%.o,$(PSFLIB_C_SOURCES))
+
+# build rule for all C files
+%.o : %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+$(TARGET): $(VIO2SF_CXX_OBJECTS) $(VIO2SF_C_OBJECTS) $(XZ_EMBEDDED_C_OBJECTS)
+	$(LD) -o $(TARGET) $^ --memory-init-file 0 -Wall $(OPT_LEVEL) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST) -s TOTAL_MEMORY=134217728 -s ASSERTIONS=2
+	mkdir -p $(FINALDIR)
+	cp $(TARGET)* $(FINALDIR)
+
+endif
