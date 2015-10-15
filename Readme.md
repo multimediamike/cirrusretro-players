@@ -19,6 +19,7 @@ and Microsoft Edge.
 * SAP, either raw or compressed with xz-crc32
 * SPC, either raw or packaged within a .gamemusic archive, and can be compressed with xz-crc32; note that .rsn format (RAR), the prevailing method for packaging SPC files, is *not* supported
 * VGM, either raw or packaged within a .gamemusic archive, and can be compressed with xz-crc32
+* 2SF Nintendo DS files, but only if they are packaged as .psfarchive files
 
 ## Building
 To build all the players, type `make`. Note that this requires that Emscripten
