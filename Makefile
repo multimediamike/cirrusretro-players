@@ -16,6 +16,7 @@ all:
 	make -f Makefile-gme GME_PLAYER=sap $(JOBS)
 	make -f Makefile-gme GME_PLAYER=spc $(JOBS)
 	make -f Makefile-gme GME_PLAYER=vgm $(JOBS)
+	make -f Makefile-vio2sf $(JOBS)
 
 clean:
 	rm -rf objects
