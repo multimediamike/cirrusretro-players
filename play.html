@@ -8,15 +8,63 @@
 <script>
 
 var nowPlaying = false;
+/* initialize to -1 to indicate that no song is currently playing */
+var currentTest = -1;
 var currentTrack = 0;
-var player = "/final/cr-gme-nsf.js";
-var musicUrl = "/music-samples/akumajou-densetsu.nsf.xz";
-//var player = "/final/cr-gme-spc.js";
-//var musicUrl = "/music-samples/btbm.gamemusic.xz";
-//var player = "/final/cr-vio2sf.js";
-//var musicUrl = "/music-samples/jedi-alliance.psfarchive";
-var trackCount = 5;
+var trackCount = 0;
 var timer = 0;
+var canvas = null;
+
+var musicTests = [
+    {
+        'name': '(Select a music file)',
+        'player': null,
+        'musicUrl': null,
+        'trackCount': 0
+    },
+    {
+        'name': 'NSFe w/ VRC6 (Castlevania 3, Japanese)',
+        'player': '/final/cr-gme-nsf.js',
+        'musicUrl': '/music-samples/akumajou-densetsu.nsf.xz',
+        'trackCount': 28
+    },
+    {
+        'name': 'SPC (Battletoads)',
+        'player': '/final/cr-gme-spc.js',
+        'musicUrl': '/music-samples/btbm.gamemusic.xz',
+        'trackCount': 13
+    },
+    {
+        'name': 'GBS (Battletoads)',
+        'player': '/final/cr-gme-gbs.js',
+        'musicUrl': '/music-samples/battletoads.gbs.xz',
+        'trackCount': 14
+    },
+    {
+        'name': 'VGM, Genesis (Sonic)',
+        'player': '/final/cr-gme-vgm.js',
+        'musicUrl': '/music-samples/sonic3-icecap1.vgm',
+        'trackCount': 1
+    },
+    {
+        'name': 'AY (Burnin\' Rubber)',
+        'player': '/final/cr-gme-ay.js',
+        'musicUrl': '/music-samples/burnin-rubber.ay.xz',
+        'trackCount': 5
+    },
+    {
+        'name': 'HES (Lady Sword)',
+        'player': '/final/cr-gme-hes.js',
+        'musicUrl': '/music-samples/lady-sword.hes.xz',
+        'trackCount': 1
+    },
+    {
+        'name': 'SAP (Mountain King)',
+        'player': '/final/cr-gme-sap.js',
+        'musicUrl': '/music-samples/Mountain_King.sap.xz',
+        'trackCount': 1
+    },
+];
 
 function toggleSound()
 {
@@ -54,11 +102,47 @@ function nextTrack()
     updateTrackDisplay();
 }
 
+function newTestSelected(evt)
+{
+    var testSelect = document.getElementById('testSelect');
+    loadTest(evt.target.value);
+}
+
+function loadTest(testNumber)
+{
+    if (currentTest != -1)
+    {
+        return;
+    }
+
+    currentTest = testNumber;
+
+    var musicTest = musicTests[testNumber];
+    trackCount = musicTest['trackCount'];
+
+    /* hide the select control and replace with text */
+    var elem = document.getElementById('testSelect');
+    elem.style.display = 'none';
+    elem = document.getElementById('testName');
+    elem.innerHTML = "Testing '" + musicTest['name'] + "' (refresh page to test another player)";
+    initializeCrPlayer(musicTest['player'], musicTest['musicUrl'], canvas, loadProgress, playerIsReady, tick, currentTrack);
+    updateTrackDisplay();
+}
+
 function pageLoaded()
 {
-    var canvas = document.getElementById('visualizer');
-    initializeCrPlayer(player, musicUrl, canvas, loadProgress, playerIsReady, tick, currentTrack);
-    updateTrackDisplay();
+    /* initialize the list of test options */
+    var testSelect = document.getElementById('testSelect');
+    for (var i = 0; i < musicTests.length; i++)
+    {
+        var option = document.createElement('option');
+        option.innerHTML = musicTests[i]['name'];
+        option.value = i;
+        testSelect.appendChild(option);
+    }
+
+    /* load the first test by default */
+    canvas = document.getElementById('visualizer');
 }
 
 function updateTrackDisplay()
@@ -96,7 +180,12 @@ function tick()
 
 <body onload="pageLoaded()">
 <h1>Cirrus Retro Player Test Bed</h1>
-<canvas id="visualizer" width="600" height="300"></canvas>
+<p>
+<select id="testSelect" onchange="newTestSelected(event)"></select>
+<div id="testName"></div>
+</p>
+
+<canvas id="visualizer" width="500" height="250"></canvas>
 <p>
 <input type="button" id="prevButton" onclick="prevTrack()" value=" << ">
 <input type="button" id="playButton" onclick="toggleSound()" value="---">
