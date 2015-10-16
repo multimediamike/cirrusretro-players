@@ -172,6 +172,15 @@ function playerIsReady(statusMessage)
 function tick()
 {
     timer++;
+
+    /* sort out the time display */
+    var minutes = parseInt(timer / 60);
+    var seconds = parseInt(timer % 60);
+    if (seconds < 10)
+        seconds = "0" + seconds;
+    formattedTime = minutes + ":" + seconds;
+    var timeField = document.getElementById("timeField");
+    timeField.innerHTML = formattedTime;
 }
 
 </script>
@@ -192,9 +201,8 @@ function tick()
 <input type="button" id="nextButton" onclick="nextTrack()" value=" >> ">
 </p>
 
-<p>
+<div id="timeField">0:00</div>
 <div id="trackDisplay">---</div>
-</p>
 
 </body>
 
