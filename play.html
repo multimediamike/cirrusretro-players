@@ -92,6 +92,7 @@ function prevTrack()
     timer = 0;
     setCrTrack(currentTrack);
     updateTrackDisplay();
+    updateTimeField();
 }
 
 function nextTrack()
@@ -100,6 +101,7 @@ function nextTrack()
     timer = 0;
     setCrTrack(currentTrack);
     updateTrackDisplay();
+    updateTimeField();
 }
 
 function newTestSelected(evt)
@@ -169,10 +171,8 @@ function playerIsReady(statusMessage)
     startCrAudio();
 }
 
-function tick()
+function updateTimeField()
 {
-    timer++;
-
     /* sort out the time display */
     var minutes = parseInt(timer / 60);
     var seconds = parseInt(timer % 60);
@@ -181,6 +181,12 @@ function tick()
     formattedTime = minutes + ":" + seconds;
     var timeField = document.getElementById("timeField");
     timeField.innerHTML = formattedTime;
+}
+
+function tick()
+{
+    timer++;
+    updateTimeField();
 }
 
 </script>
