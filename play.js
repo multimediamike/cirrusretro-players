@@ -433,7 +433,7 @@ cr.enablePlayerAudio = function(enabled)
     if (enabled)
     {
         cr.isPaused = false;
-        requestAnimationFrame(drawOscope);
+        requestAnimationFrame(cr.drawOscope);
     }
     else
     {
@@ -458,7 +458,7 @@ cr.enablePlayerViz = function(enabled)
     cr.vizEnabled = enabled;
     if (cr.vizEnabled)
     {
-        requestAnimationFrame(drawOscope);
+        requestAnimationFrame(cr.drawOscope);
     }
     else
     {

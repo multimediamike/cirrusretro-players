@@ -189,6 +189,12 @@ function tick()
     updateTimeField();
 }
 
+function toggleViz(evt)
+{
+    var checkbox = document.getElementById('vizEnabled');
+    cr.enablePlayerViz(checkbox.checked);
+}
+
 </script>
 
 </head>
@@ -201,14 +207,16 @@ function tick()
 </p>
 
 <canvas id="visualizer" width="500" height="250"></canvas>
-<p>
+<div>
 <input type="button" id="prevButton" onclick="prevTrack()" value=" << ">
 <input type="button" id="playButton" onclick="toggleSound()" value="---">
 <input type="button" id="nextButton" onclick="nextTrack()" value=" >> ">
-</p>
+<label><input type="checkbox" id="vizEnabled" onchange="toggleViz()" checked>Enable viz</label>
+</div>
 
 <div id="timeField">0:00</div>
 <div id="trackDisplay">---</div>
+</div>
 
 </body>
 
