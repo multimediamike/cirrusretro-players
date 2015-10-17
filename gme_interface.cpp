@@ -131,6 +131,14 @@ int crPlayerSetTrack(void *context, int track)
         /* when it's time to start a track, it's always going to be
          * track 0 (first and only) of a single-song file */
         trueTrack = 0;
+
+        /* if a file is already being played, free it first */
+        if (gme->emu)
+        {
+            gme_delete(gme->emu);
+            gme->emu = NULL;
+        }
+
         entry = &gme->entries[track];
         status = gme_open_data(gme->dataBuffer + entry->offset, entry->size,
             &gme->emu, gme->sampleRate);
@@ -140,11 +148,14 @@ int crPlayerSetTrack(void *context, int track)
     else
     {
         trueTrack = track;
-        status = gme_open_data(gme->dataBuffer, gme->dataBufferSize,
-            &gme->emu, gme->sampleRate);
-        if (status)
-            return 0;
-        gme->trackCount = gme_track_count(gme->emu);
+        /* if the player isn't already open, do the initialization */
+        if (!gme->emu)
+        {
+            status = gme_open_data(gme->dataBuffer, gme->dataBufferSize,
+                &gme->emu, gme->sampleRate);
+            if (status)
+                return 0;
+        }
     }
 
     /* set the track */
