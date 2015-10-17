@@ -37,6 +37,7 @@ cr.currentBlue = 250;
 cr.rInc = -1;
 cr.gInc = -2;
 cr.bInc = -3;
+cr.actualChannels = 2;
 
 cr.playerFile = null;
 cr.currentTrack = 0;
@@ -133,6 +134,7 @@ cr.crPlayerIsLoaded = function()
         cr.playerIsReadyCallback("Problem: set track operation returned " + ret);
         return;
     }
+    cr.actualChannels = ret;
 
     /* validate that the voice count makes sense */
     cr.voiceCount = _crPlayerGetVoiceCount(cr.playerContext.byteOffset);
@@ -227,7 +229,7 @@ cr.generateAudioCallback = function(audioProcessingEvent)
 
     /* create an array for the player to use for sample generation */
     var samplesCount = outputBuffer.length * cr.channels;
-    var samplesCountInBytes = samplesCount * 2;
+    var samplesCountInBytes = samplesCount * 2;  /* 2 bytes per sample */
     if (!cr.samplesMalloc || !cr.samples)
     {
         cr.samplesMalloc = Module._malloc(samplesCountInBytes);
@@ -328,22 +330,25 @@ cr.drawOscope = function(timestamp)
     cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
-    cr.canvasCtx.lineWidth = 1;
-    cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
-    cr.canvasCtx.beginPath();
-    cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
-    cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
-    cr.canvasCtx.stroke();
+    if (cr.actualChannels > 1)
+    {
+        cr.canvasCtx.lineWidth = 1;
+        cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+        cr.canvasCtx.beginPath();
+        cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
+        cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
+        cr.canvasCtx.stroke();
+    }
 
     cr.canvasCtx.beginPath();
     cr.canvasCtx.lineWidth = 2;
     cr.canvasCtx.strokeStyle = 'rgb(' + cr.currentRed + ', ' + cr.currentGreen + ', ' + cr.currentBlue + ')';
     var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
-    var divisor = 32768.0 / (cr.canvasHeight / 4);
-    for (var i = 0; i < cr.channels; i++)
+    var divisor = 32768.0 / (cr.canvasHeight / (2 * cr.actualChannels));
+    for (var i = 0; i < cr.actualChannels; i++)
     {
         var index = segment + i;
-        var center = (cr.canvasHeight / 4) + (i * cr.canvasHeight / 2);
+        var center = (cr.canvasHeight / (2 * cr.actualChannels)) + (i * cr.canvasHeight / cr.actualChannels);
         for (var x = 0; x < cr.canvasWidth; x++)
         {
             var y = center - (cr.vizBuffer[index] / divisor);

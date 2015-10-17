@@ -162,8 +162,16 @@ int crPlayerSetTrack(void *context, int track)
     status = gme_start_track(gme->emu, trueTrack);
     if (!status)
     {
+        gme_type_t type = gme_type(gme->emu);
         gme->voiceCount = gme_voice_count(gme->emu);
-        return 2; /* stereo */
+
+        /* return either mono or stereo depending on the file type */
+        if ((type == gme_gbs_type) ||
+            (type == gme_spc_type) ||
+            (type == gme_vgm_type))
+            return 2; /* stereo */
+        else
+            return 1; /* mono */
     }
     else
     {
