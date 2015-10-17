@@ -73,13 +73,13 @@ function toggleSound()
     {
         nowPlaying = false;
         playButton.value = "Play";
-        enableCrPlayerAudio(false);
+        cr.enablePlayerAudio(false);
     }
     else if (nowPlaying == false && playButton.value == "Play")
     {
         nowPlaying = true;
         playButton.value = "Pause";
-        enableCrPlayerAudio(true);
+        cr.enablePlayerAudio(true);
     }
 }
 
@@ -90,7 +90,7 @@ function prevTrack()
     else
         currentTrack = trackCount - 1;
     timer = 0;
-    setCrTrack(currentTrack);
+    cr.setTrack(currentTrack);
     updateTrackDisplay();
     updateTimeField();
 }
@@ -99,7 +99,7 @@ function nextTrack()
 {
     currentTrack = (currentTrack + 1) % trackCount;
     timer = 0;
-    setCrTrack(currentTrack);
+    cr.setTrack(currentTrack);
     updateTrackDisplay();
     updateTimeField();
 }
@@ -127,7 +127,7 @@ function loadTest(testNumber)
     elem.style.display = 'none';
     elem = document.getElementById('testName');
     elem.innerHTML = "Testing '" + musicTest['name'] + "' (refresh page to test another player)";
-    initializeCrPlayer(musicTest['player'], musicTest['musicUrl'], canvas, loadProgress, playerIsReady, tick, currentTrack);
+    cr.initializePlayer(musicTest['player'], musicTest['musicUrl'], canvas, loadProgress, playerIsReady, tick, currentTrack);
     updateTrackDisplay();
 }
 
@@ -168,7 +168,7 @@ function playerIsReady(statusMessage)
     }
     playButton.value = "Pause";
     nowPlaying = true;
-    startCrAudio();
+    cr.startAudio();
 }
 
 function updateTimeField()

@@ -1,49 +1,54 @@
+/* Construct a namespace for the Cirrus Retro module */
+var cr = {};
+
+/* Module variables */
+
 /* find the audio context */
-var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+cr.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 /* for volume control */
-var gainNode = audioCtx.createGain();
+cr.gainNode = cr.audioCtx.createGain();
 
 /* other variables pertinent to audio processing */
-var secondsPerNode = 1.0;
-var channels = 2;
-var frameCount = audioCtx.sampleRate * secondsPerNode;
-var myArrayBuffer = audioCtx.createBuffer(channels, frameCount, audioCtx.sampleRate);
-var samplesMalloc;
-var samples;
-var source;  /* AudioBufferSourceNode */
-var FRAME_COUNT = 4096;
+cr.secondsPerNode = 1.0;
+cr.channels = 2;
+cr.frameCount = cr.audioCtx.sampleRate * cr.secondsPerNode;
+cr.myArrayBuffer = cr.audioCtx.createBuffer(cr.channels, cr.frameCount, cr.audioCtx.sampleRate);
+cr.samplesMalloc = null;
+cr.samples = null;
+cr.source = null;  /* AudioBufferSourceNode */
+cr.FRAME_COUNT = 4096;
 
 /* visualization */
-var vizEnabled = true;
-var vizBufferSize = audioCtx.sampleRate * channels;
-var vizBuffer = new Int16Array(vizBufferSize);
-var vizBufferIndex = 0;
-var canvas = null;
-var canvasCtx;
-var canvasWidth;
-var canvasHeight;
-var audioStarted = false;
-var firstAudioTimestamp = 0;
-var nextTimestamp = 0;
-var FRAMERATE_DELTA = 1.0/30;
-var currentRed = 250;
-var currentGreen = 250;
-var currentBlue = 250;
-var rInc = -1;
-var gInc = -2;
-var bInc = -3;
+cr.vizEnabled = true;
+cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
+cr.vizBuffer = new Int16Array(cr.vizBufferSize);
+cr.vizBufferIndex = 0;
+cr.canvas = null;
+cr.canvasCtx = null;
+cr.canvasWidth = 0;
+cr.canvasHeight = 0;
+cr.audioStarted = false;
+cr.firstAudioTimestamp = 0;
+cr.nextTimestamp = 0;
+cr.FRAMERATE_DELTA = 1.0/30;
+cr.currentRed = 250;
+cr.currentGreen = 250;
+cr.currentBlue = 250;
+cr.rInc = -1;
+cr.gInc = -2;
+cr.bInc = -3;
 
-var playerFile;
-var crCurrentTrack = 0;
-var musicResponseBytes;
-var playerContext;
-var isPaused = false;
-var failureState = false;
-var playerIsReadyCallback = null;
-var loadProgressCallback = null;
-var tickCallback = null;
-var tickCountdown;  /* when this goes below 0, a second has elapsed */
-var voiceCount = 0;
+cr.playerFile = null;
+cr.currentTrack = 0;
+cr.musicResponseBytes = null;
+cr.playerContext = null;
+cr.isPaused = false;
+cr.failureState = false;
+cr.playerIsReadyCallback = null;
+cr.loadProgressCallback = null;
+cr.tickCallback = null;
+cr.tickCountdown = 0;  /* when this goes below 0, a second has elapsed */
+cr.voiceCount = 0;
 
 /*
  * Private function:
@@ -52,27 +57,27 @@ var voiceCount = 0;
  * This callback is invoked for music progress/load/error events. When
  * the music is fully loaded, go to the next phase of loading the player.
  */
-function musicLoadEvent(evt)
+cr.musicLoadEvent = function(evt)
 {
     if (evt.type == "progress")
     {
-        if (loadProgressCallback)
+        if (cr.loadProgressCallback)
         {
-            loadProgressCallback(evt.loaded, evt.total);
+            cr.loadProgressCallback(evt.loaded, evt.total);
         }
     }
     else if (evt.type == "load")
     {
         /* copy the response bytes to a typed array */
-        musicResponseBytes = new Uint8Array(evt.target.response);
+        cr.musicResponseBytes = new Uint8Array(evt.target.response);
 
         /* request the player to be loaded */
         var script = document.createElement('script');
-        script.src = playerFile;
-        script.onload = crPlayerIsLoaded;
+        script.src = cr.playerFile;
+        script.onload = cr.crPlayerIsLoaded;
         document.head.appendChild(script);
     }
-}
+};
 
 /*
  * Private function:
@@ -86,75 +91,75 @@ function musicLoadEvent(evt)
  * to the callback is either null if everything initialized correctly, or
  * a string to describe what failed.
  */
-function crPlayerIsLoaded()
+cr.crPlayerIsLoaded = function()
 {
     /* create a private context for the player to use */
     var contextSize = _crPlayerContextSize();
     /* the context size really should be non-zero */
     if (contextSize <= 0)
     {
-        playerIsReadyCallback("Problem: context size is " + contextSize);
+        cr.playerIsReadyCallback("Problem: context size is " + contextSize);
         return;
     }
 
     var contextMalloc = Module._malloc(contextSize);
-    playerContext = new Uint8Array(Module.HEAPU8.buffer, contextMalloc, contextSize);
+    cr.playerContext = new Uint8Array(Module.HEAPU8.buffer, contextMalloc, contextSize);
 
     /* initialize the player */
-    ret = _crPlayerInitialize(playerContext.byteOffset, audioCtx.sampleRate);
+    ret = _crPlayerInitialize(cr.playerContext.byteOffset, cr.audioCtx.sampleRate);
     if (ret != 1)
     {
-        playerIsReadyCallback("Problem: player initialization returned " + ret);
+        cr.playerIsReadyCallback("Problem: player initialization returned " + ret);
         return;
     }
 
     /* transfer the ArrayBuffer to a UInt8Array */
-    var musicBytesMalloc = Module._malloc(musicResponseBytes.byteLength);
-    var musicBytes = new Uint8Array(Module.HEAPU8.buffer, musicBytesMalloc,musicResponseBytes.byteLength);
-    musicBytes.set(new Uint8Array(musicResponseBytes));
+    var musicBytesMalloc = Module._malloc(cr.musicResponseBytes.byteLength);
+    var musicBytes = new Uint8Array(Module.HEAPU8.buffer, musicBytesMalloc, cr.musicResponseBytes.byteLength);
+    musicBytes.set(new Uint8Array(cr.musicResponseBytes));
 
     /* load the file into the player */
-    ret = _crPlayerLoadFile(playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, 0 /* parm needs to go away */);
+    ret = _crPlayerLoadFile(cr.playerContext.byteOffset, 0, musicBytes.byteOffset, musicBytes.length, 0 /* parm needs to go away */);
     if (ret != 1)
     {
-        playerIsReadyCallback("Problem: load file operation returned " + ret);
+        cr.playerIsReadyCallback("Problem: load file operation returned " + ret);
         return;
     }
 
     /* set the initial track */
-    ret = _crPlayerSetTrack(playerContext.byteOffset, crCurrentTrack);
+    ret = _crPlayerSetTrack(cr.playerContext.byteOffset, cr.currentTrack);
     if (ret == 0)
     {
-        playerIsReadyCallback("Problem: set track operation returned " + ret);
+        cr.playerIsReadyCallback("Problem: set track operation returned " + ret);
         return;
     }
 
     /* validate that the voice count makes sense */
-    voiceCount = _crPlayerGetVoiceCount(playerContext.byteOffset);
-    if (voiceCount == 0)
+    cr.voiceCount = _crPlayerGetVoiceCount(cr.playerContext.byteOffset);
+    if (cr.voiceCount == 0)
     {
-        playerIsReadyCallback("Problem: voice count is " + voiceCount);
+        cr.playerIsReadyCallback("Problem: voice count is " + cr.voiceCount);
         return;
     }
 
     /* initialize the visualization */
-    initOscope();
+    cr.initOscope();
 
     /* tell the host code that the player is ready */
-    playerIsReadyCallback(null);
-}
+    cr.playerIsReadyCallback(null);
+};
 
-function setCrTrack(track)
+cr.setTrack = function(track)
 {
-    crCurrentTrack = track;
-    tickCountdown = audioCtx.sampleRate;
+    cr.currentTrack = track;
+    cr.tickCountdown = cr.audioCtx.sampleRate;
 
-    ret = _crPlayerSetTrack(playerContext.byteOffset, crCurrentTrack);
-}
+    ret = _crPlayerSetTrack(cr.playerContext.byteOffset, cr.currentTrack);
+};
 
 /*
  * Public function:
- *  startCrAudio()
+ *  startAudio()
  *
  * Start the playback, including the visualizer if enabled.
  *
@@ -164,45 +169,45 @@ function setCrTrack(track)
  * Output:
  *  - undefined
  */
-function startCrAudio()
+cr.startAudio = function()
 {
     /* script processor drives the dynamic audio generation */
-    scriptNode = audioCtx.createScriptProcessor(FRAME_COUNT, 2, 2);
-    scriptNode.onaudioprocess = generateAudioCallback;
+    scriptNode = cr.audioCtx.createScriptProcessor(cr.FRAME_COUNT, 2, 2);
+    scriptNode.onaudioprocess = cr.generateAudioCallback;
 
     /* Get an AudioBufferSourceNode to play an AudioBuffer */
-    source = audioCtx.createBufferSource();
+    cr.source = cr.audioCtx.createBufferSource();
 
     /* set the buffer in the AudioBufferSourceNode */
-    source.buffer = myArrayBuffer;
+    cr.source.buffer = cr.myArrayBuffer;
 
     /* connect the nodes:
          AudioBufferSourceNode -> ScriptProcessorNode
          ScriptProcessorNode -> GainNode
          GainNode -> audio context destination
     */
-    gainNode.gain.value = 1.0;
-    source.connect(scriptNode);
-    scriptNode.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    cr.gainNode.gain.value = 1.0;
+    cr.source.connect(scriptNode);
+    scriptNode.connect(cr.gainNode);
+    cr.gainNode.connect(cr.audioCtx.destination);
 
-    vizBufferIndex = 0;
-    isPaused = false;
+    cr.vizBufferIndex = 0;
+    cr.isPaused = false;
 
     /* start the source playing */
-    source.start(0);
-}
+    cr.source.start(0);
+};
 
 /*
  * Private function:
  *  callback for generating more audio
  */
-function generateAudioCallback(audioProcessingEvent)
+cr.generateAudioCallback = function(audioProcessingEvent)
 {
     /* The output buffer contains the samples that will be modified and played */
     var outputBuffer = audioProcessingEvent.outputBuffer;
 
-    if (isPaused && !failureState)
+    if (cr.isPaused && !cr.failureState)
     {
         /* Loop through the output channels */
         for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
@@ -215,164 +220,164 @@ function generateAudioCallback(audioProcessingEvent)
                 outputData[sample] = 0.0;
             }
         }
-        vizBufferIndex = (outputBuffer.length * 2) % vizBufferSize;
+        cr.vizBufferIndex = (outputBuffer.length * 2) % cr.vizBufferSize;
 
         return;
     }
 
     /* create an array for the player to use for sample generation */
-    var samplesCount = outputBuffer.length * channels;
+    var samplesCount = outputBuffer.length * cr.channels;
     var samplesCountInBytes = samplesCount * 2;
-    if (!samplesMalloc || !samples)
+    if (!cr.samplesMalloc || !cr.samples)
     {
-        samplesMalloc = Module._malloc(samplesCountInBytes);
-        samples = new Int16Array(Module.HEAP16.buffer, samplesMalloc, samplesCount);
+        cr.samplesMalloc = Module._malloc(samplesCountInBytes);
+        cr.samples = new Int16Array(Module.HEAP16.buffer, cr.samplesMalloc, samplesCount);
     }
-    var ret = _crPlayerGenerateStereoFrames(playerContext.byteOffset, samples.byteOffset, outputBuffer.length);
+    var ret = _crPlayerGenerateStereoFrames(cr.playerContext.byteOffset, cr.samples.byteOffset, outputBuffer.length);
     if (ret == 0)
     {
         console.log("failed to generate frames");
-        failureState = true;
+        cr.failureState = true;
         return;
     }
 
     /* tick accounting */
-    tickCountdown -= outputBuffer.length;
-    if (tickCountdown < 0)
+    cr.tickCountdown -= outputBuffer.length;
+    if (cr.tickCountdown < 0)
     {
-        tickCountdown += audioCtx.sampleRate;
-        if (tickCallback)
-            tickCallback();
+        cr.tickCountdown += cr.audioCtx.sampleRate;
+        if (cr.tickCallback)
+            cr.tickCallback();
     }
 
     /* Loop through the output channels */
     for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++)
     {
         var outputData = outputBuffer.getChannelData(channel);
-        var index = vizBufferIndex + channel;
+        var index = cr.vizBufferIndex + channel;
 
         /* Loop through the input samples */
         for (var sample = 0; sample < outputBuffer.length; sample++)
         {
-            var currentSample = samples[channel + sample * 2];
+            var currentSample = cr.samples[channel + sample * 2];
 
             /* convert data from int16 -> float32 [-1.0 .. 1.0] */
             outputData[sample] = currentSample / 32767.0;
 
             /* stash data for visualization */
-            vizBuffer[index] = currentSample;
-            index = (index + 2) % vizBufferSize;
+            cr.vizBuffer[index] = currentSample;
+            index = (index + 2) % cr.vizBufferSize;
         }
     }
-    vizBufferIndex = index;
-    if (!audioStarted)
+    cr.vizBufferIndex = index;
+    if (!cr.audioStarted)
     {
-        firstAudioTimestamp = audioProcessingEvent.playbackTime;
-        audioStarted = true;
-        drawOscope(0);
+        cr.firstAudioTimestamp = audioProcessingEvent.playbackTime;
+        cr.audioStarted = true;
+        cr.drawOscope(0);
     }
-}
+};
 
 /*
  * Private function:
  *  Initialize the oscilloscope based on the canvas that the module
  *  was initialized with.
  */
-function initOscope()
+cr.initOscope = function()
 {
-    if (!canvas)
+    if (!cr.canvas)
         return;
 
-    canvasCtx = canvas.getContext("2d");
-    canvasWidth = canvasCtx.canvas.width;
-    canvasHeight = canvasCtx.canvas.height;
+    cr.canvasCtx = cr.canvas.getContext("2d");
+    cr.canvasWidth = cr.canvasCtx.canvas.width;
+    cr.canvasHeight = cr.canvasCtx.canvas.height;
 
     /* wipe canvas */
-    canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-    canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
     /* dividing center line */
-    canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(0, canvasHeight / 2);
-    canvasCtx.lineTo(canvasWidth, canvasHeight / 2);
-    canvasCtx.stroke();
-}
+    cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+    cr.canvasCtx.beginPath();
+    cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
+    cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
+    cr.canvasCtx.stroke();
+};
 
 /*
  * Private function:
  *  Draw a frame of the oscilloscope visualization.
  */
-function drawOscope(timestamp)
+cr.drawOscope = function(timestamp)
 {
-    if (!vizEnabled || !canvas || isPaused)
+    if (!cr.vizEnabled || !cr.canvas || cr.isPaused)
         return;
 
     timestamp /= 1000;
-    drawVisual = requestAnimationFrame(drawOscope);
+    drawVisual = requestAnimationFrame(cr.drawOscope);
 
-    if (nextTimestamp)
+    if (cr.nextTimestamp)
     {
-        if (timestamp <= nextTimestamp)
+        if (timestamp <= cr.nextTimestamp)
             return;
     }
-    else if (!audioStarted || timestamp < firstAudioTimestamp)
+    else if (!cr.audioStarted || timestamp < cr.firstAudioTimestamp)
     {
         return;
     }
 
-    canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-    canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
-    canvasCtx.lineWidth = 1;
-    canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(0, canvasHeight / 2);
-    canvasCtx.lineTo(canvasWidth, canvasHeight / 2);
-    canvasCtx.stroke();
+    cr.canvasCtx.lineWidth = 1;
+    cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+    cr.canvasCtx.beginPath();
+    cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
+    cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
+    cr.canvasCtx.stroke();
 
-    canvasCtx.beginPath();
-    canvasCtx.lineWidth = 2;
-    canvasCtx.strokeStyle = 'rgb(' + currentRed + ', ' + currentGreen + ', ' + currentBlue + ')';
-    var segment = Math.round((audioCtx.currentTime - firstAudioTimestamp) * vizBufferSize % vizBufferSize);
-    var divisor = 32768.0 / (canvasHeight / 4);
-    for (var i = 0; i < channels; i++)
+    cr.canvasCtx.beginPath();
+    cr.canvasCtx.lineWidth = 2;
+    cr.canvasCtx.strokeStyle = 'rgb(' + cr.currentRed + ', ' + cr.currentGreen + ', ' + cr.currentBlue + ')';
+    var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
+    var divisor = 32768.0 / (cr.canvasHeight / 4);
+    for (var i = 0; i < cr.channels; i++)
     {
         var index = segment + i;
-        var center = (canvasHeight / 4) + (i * canvasHeight / 2);
-        for (var x = 0; x < canvasWidth; x++)
+        var center = (cr.canvasHeight / 4) + (i * cr.canvasHeight / 2);
+        for (var x = 0; x < cr.canvasWidth; x++)
         {
-            var y = center - (vizBuffer[index] / divisor);
+            var y = center - (cr.vizBuffer[index] / divisor);
             index += 2;
 
             if(x === 0)
             {
-                canvasCtx.moveTo(x, y);
+                cr.canvasCtx.moveTo(x, y);
             }
             else
             {
-                canvasCtx.lineTo(x, y);
+                cr.canvasCtx.lineTo(x, y);
             }
         }
-        canvasCtx.stroke();
+        cr.canvasCtx.stroke();
     }
 
     /* play with colors */
-    if (currentRed < 64 || currentRed > 250)
-        rInc *= -1;
-    if (currentGreen < 64 || currentGreen > 250)
-        gInc *= -1;
-    if (currentBlue < 64 || currentBlue > 250)
-        bInc *= -1;
-    currentRed += rInc;
-    currentGreen += gInc;
-    currentBlue += bInc;
+    if (cr.currentRed < 64 || cr.currentRed > 250)
+        cr.rInc *= -1;
+    if (cr.currentGreen < 64 || cr.currentGreen > 250)
+        cr.gInc *= -1;
+    if (cr.currentBlue < 64 || cr.currentBlue > 250)
+        cr.bInc *= -1;
+    cr.currentRed += cr.rInc;
+    cr.currentGreen += cr.gInc;
+    cr.currentBlue += cr.bInc;
 
-    nextTimestamp = timestamp + FRAMERATE_DELTA;
-}
+    cr.nextTimestamp = timestamp + cr.FRAMERATE_DELTA;
+};
 
 /*
  * Public function:
- *  initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
+ *  initializePlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
  *
  * Initialize a Cirrus Retro player.
  *
@@ -389,31 +394,31 @@ function drawOscope(timestamp)
  * Output:
  *  undefined: this doesn't fail; it merely sets events in motion
  */
-function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
+cr.initializePlayer = function(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
 {
-    playerFile = player;
-    playerIsReadyCallback = playerIsReady;
-    loadProgressCallback = loadProgress
-    tickCallback = tick;
-    canvas = hostCanvas;
-    crCurrentTrack = firstTrack;
+    cr.playerFile = player;
+    cr.playerIsReadyCallback = playerIsReady;
+    cr.loadProgressCallback = loadProgress
+    cr.tickCallback = tick;
+    cr.canvas = hostCanvas;
+    cr.currentTrack = firstTrack;
 
-    tickCountdown = audioCtx.sampleRate;
+    cr.tickCountdown = cr.audioCtx.sampleRate;
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();
-    musicFile.addEventListener("progress", musicLoadEvent);
-    musicFile.addEventListener("load", musicLoadEvent);
-    musicFile.addEventListener("error", musicLoadEvent);
-    musicFile.addEventListener("abort", musicLoadEvent);
+    musicFile.addEventListener("progress", cr.musicLoadEvent);
+    musicFile.addEventListener("load", cr.musicLoadEvent);
+    musicFile.addEventListener("error", cr.musicLoadEvent);
+    musicFile.addEventListener("abort", cr.musicLoadEvent);
     musicFile.open("GET", musicUrl);
     musicFile.responseType = "arraybuffer";
     musicFile.send();
-}
+};
 
 /*
  * Public function:
- *  enableCrPlayerAudio(enabled)
+ *  enablePlayerAudio(enabled)
  *
  * Play/pause function for the player audio.
  *
@@ -423,22 +428,22 @@ function initializeCrPlayer(player, musicUrl, hostCanvas, loadProgress, playerIs
  * Output:
  *  - undefined
  */
-function enableCrPlayerAudio(enabled)
+cr.enablePlayerAudio = function(enabled)
 {
     if (enabled)
     {
-        isPaused = false;
+        cr.isPaused = false;
         requestAnimationFrame(drawOscope);
     }
     else
     {
-        isPaused = true;
+        cr.isPaused = true;
     }
-}
+};
 
 /*
  * Public function:
- *  enableCrPlayerViz(enabled)
+ *  enablePlayerViz(enabled)
  *
  * Enable/disable the audio visualization.
  *
@@ -448,23 +453,23 @@ function enableCrPlayerAudio(enabled)
  * Output:
  *  - undefined
  */
-function enableCrPlayerViz(enabled)
+cr.enablePlayerViz = function(enabled)
 {
-    vizEnabled = enabled;
-    if (vizEnabled)
+    cr.vizEnabled = enabled;
+    if (cr.vizEnabled)
     {
         requestAnimationFrame(drawOscope);
     }
     else
     {
-        canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-        canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+        cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+        cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
     }
-}
+};
 
 /*
  * Public function:
- *  setCrColume(volumeLevel)
+ *  setVolume(volumeLevel)
  *
  * Set the audio output volume.
  *
@@ -474,19 +479,19 @@ function enableCrPlayerViz(enabled)
  * Output:
  *  - undefined
  */
-function setCrVolume(volumeLevel)
+cr.setVolume = function(volumeLevel)
 {
     if (volumeLevel < 1)
         volumeLevel = 1;
     else if (volumeLevel > 255)
         volumeLevel = 255;
 
-    gainNode.gain.value = volumeLevel / 255.0;
-}
+    cr.gainNode.gain.value = volumeLevel / 255.0;
+};
 
 /*
  * Public function:
- *  getCrVoiceInfo()
+ *  getVoiceInfo()
  *
  * Input:
  *  - None
@@ -496,19 +501,19 @@ function setCrVolume(volumeLevel)
  *     canBeToggled: a Boolean indicating whether voices can be toggled
  *     voiceCount: the number of voices comprising the music
  */
-function getCrVoiceInfo()
+cr.getVoiceInfo = function()
 {
     var info = Object();
 
-    info.canBeToggled = _crPlayerVoicesCanBeToggled(playerContext.byteOffset);
-    info.voiceCount = _crPlayerGetVoiceCount(playerContext.byteOffset);
+    info.canBeToggled = _crPlayerVoicesCanBeToggled(cr.playerContext.byteOffset);
+    info.voiceCount = _crPlayerGetVoiceCount(cr.playerContext.byteOffset);
 
     return info;
-}
+};
 
 /*
  * Public function:
- *  getCrVoiceName()
+ *  getVoiceName()
  *
  * Input:
  *  - voice number, indexed from 0
@@ -516,14 +521,14 @@ function getCrVoiceInfo()
  * Output:
  *  - a string containing the voice name
  */
-function getCrVoiceName(voice)
+cr.getVoiceName = function(voice)
 {
-    return Pointer_stringify(_crPlayerGetVoiceName(playerContext.byteOffset, voice));
-}
+    return Pointer_stringify(_crPlayerGetVoiceName(cr.playerContext.byteOffset, voice));
+};
 
 /*
  * Public function:
- *  setCrVoiceState(voice, enabled)
+ *  setVoiceState(voice, enabled)
  *
  * Input:
  *  - voice: a voice number, indexed from 0
@@ -532,8 +537,9 @@ function getCrVoiceName(voice)
  * Output:
  *  - undefined
  */
-function setCrVoiceState(voice, enabled)
+cr.setVoiceState = function(voice, enabled)
 {
-    if (voice >= 0 && voice < voiceCount)
-        _crPlayerSetVoiceState(playerContext.byteOffset, voice, enabled ? 1 : 0);
-}
+    if (voice >= 0 && voice < cr.voiceCount)
+        _crPlayerSetVoiceState(cr.playerContext.byteOffset, voice, enabled ? 1 : 0);
+};
+
