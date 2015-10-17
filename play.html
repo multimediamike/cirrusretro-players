@@ -127,6 +127,8 @@ function loadTest(testNumber)
     elem.style.display = 'none';
     elem = document.getElementById('testName');
     elem.innerHTML = "Testing '" + musicTest['name'] + "' (refresh page to test another player)";
+
+    /* initialize the player */
     cr.initializePlayer(musicTest['player'], musicTest['musicUrl'], canvas, loadProgress, playerIsReady, tick, currentTrack);
     updateTrackDisplay();
 }
@@ -158,6 +160,12 @@ function loadProgress(loadedBytes, totalBytes)
     console.log("load progress: loaded " + loadedBytes + " / " + totalBytes);
 }
 
+function toggleVoice(voice)
+{
+    var checkbox = document.getElementById('voiceToggle' + voice);
+    cr.setVoiceState(voice, checkbox.checked);
+}
+
 function playerIsReady(statusMessage)
 {
     if (statusMessage)
@@ -166,8 +174,31 @@ function playerIsReady(statusMessage)
         console.log(statusMessage);
         return;
     }
+
+    /* create the channel checkboxes */
+    var info = cr.getVoiceInfo();
+    console.log(info);
+    var channelBox = document.getElementById("channels");
+    var channelText = "";
+    if (info.canBeToggled)
+    {
+        channelText += "<em>Channels can be toggled</em><br/>\n";
+        for (var i = 0; i < info.voiceCount; i++)
+        {
+            channelText += '<label><input type="checkbox" id="voiceToggle' + i + '" checked onchange="toggleVoice(' + i + ')">' + cr.getVoiceName(i) + '</label><br/>\n';
+        }
+    }
+    else
+    {
+        channelText += "<em>Channels cannot be toggled</em>";
+    }
+    channelBox.innerHTML = channelText;
+
+    /* flip the play button on */
     playButton.value = "Pause";
     nowPlaying = true;
+
+    /* play audio */
     cr.startAudio();
 }
 
@@ -207,6 +238,10 @@ function toggleViz(evt)
 </p>
 
 <canvas id="visualizer" width="500" height="250"></canvas>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
 <div>
 <input type="button" id="prevButton" onclick="prevTrack()" value=" << ">
 <input type="button" id="playButton" onclick="toggleSound()" value="---">
@@ -216,7 +251,13 @@ function toggleViz(evt)
 
 <div id="timeField">0:00</div>
 <div id="trackDisplay">---</div>
-</div>
+</td>
+
+<td valign="top">
+<div id="channels"></div>
+</td>
+</tr>
+</table>
 
 </body>
 
