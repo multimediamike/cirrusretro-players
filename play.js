@@ -367,11 +367,11 @@ cr.drawOscope = function(timestamp)
     }
 
     /* play with colors */
-    if (cr.currentRed < 64 || cr.currentRed > 250)
+    if (cr.currentRed < 150 || cr.currentRed > 250)
         cr.rInc *= -1;
-    if (cr.currentGreen < 64 || cr.currentGreen > 250)
+    if (cr.currentGreen < 150 || cr.currentGreen > 250)
         cr.gInc *= -1;
-    if (cr.currentBlue < 64 || cr.currentBlue > 250)
+    if (cr.currentBlue < 150 || cr.currentBlue > 250)
         cr.bInc *= -1;
     cr.currentRed += cr.rInc;
     cr.currentGreen += cr.gInc;
