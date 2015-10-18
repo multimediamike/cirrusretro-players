@@ -38,6 +38,7 @@ typedef struct
     int sampleRate;
     int entryCount;
     fileEntry *entries;
+    int loaded2sf;
 } vio2sfContext;
 
 typedef struct
@@ -102,6 +103,7 @@ int crPlayerInitialize(void *context, int sampleRate)
     vio2sf->sampleRate = sampleRate;
     vio2sf->entryCount = 0;
     vio2sf->entries = NULL;
+    vio2sf->loaded2sf = 0;
 
     /* keep a global copy of the context in this file's namespace since
      * the vio2sf file load callback function doesn't offer a user parm */
@@ -157,6 +159,12 @@ int crPlayerSetTrack(void *context, int track)
     /* check that the track number is valid and fetch the root name */
     if (track >= vio2sf->entryCount)
         return 0;
+    /* if a file is already loaded and playing, shut down the engine first */
+    if (vio2sf->loaded2sf)
+    {
+        xsf_term();
+        vio2sf->loaded2sf = 0;
+    }
     offset = vio2sf->entries[track].offset;
     size = vio2sf->entries[track].size;
     dataCopy = (unsigned char*)malloc(size);
@@ -166,7 +174,10 @@ int crPlayerSetTrack(void *context, int track)
     if (!xsf_start(dataCopy, size, vio2sf->sampleRate))
         return 0;  /* initialization failed */
     else
+    {
+        vio2sf->loaded2sf = 1;
         return 2;  /* initialized; indicate stereo */
+    }
 }
 
 int crPlayerGenerateStereoFrames(void *context, int16_t *samples, int frameCount)
@@ -200,6 +211,12 @@ void crPlayerSetVoiceState(void *context, int voice, int enabled)
 void crPlayerCleanup(void *context)
 {
     vio2sfContext *vio2sf = (vio2sfContext*)context;
+
+    if (vio2sf->loaded2sf)
+    {
+        xsf_term();
+        vio2sf->loaded2sf = 0;
+    }
 
     if (vio2sf->dataBuffer)
         free(vio2sf->dataBuffer);
