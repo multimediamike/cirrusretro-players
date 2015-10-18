@@ -175,23 +175,23 @@ function playerIsReady(statusMessage)
         return;
     }
 
-    /* create the channel checkboxes */
+    /* create the voice checkboxes */
     var info = cr.getVoiceInfo();
-    var channelBox = document.getElementById("channels");
-    var channelText = "";
+    var voiceBox = document.getElementById("voices");
+    var voiceText = "";
     if (info.canBeToggled)
     {
-        channelText += "<em>Channels can be toggled</em><br/>\n";
+        voiceText += "<em>Voices can be toggled</em><br/>\n";
         for (var i = 0; i < info.voiceCount; i++)
         {
-            channelText += '<label><input type="checkbox" id="voiceToggle' + i + '" checked onchange="toggleVoice(' + i + ')">' + cr.getVoiceName(i) + '</label><br/>\n';
+            voiceText += '<label><input type="checkbox" id="voiceToggle' + i + '" checked onchange="toggleVoice(' + i + ')">' + cr.getVoiceName(i) + '</label><br/>\n';
         }
     }
     else
     {
-        channelText += "<em>Channels cannot be toggled</em>";
+        voiceText += "<em>Voices cannot be toggled</em>";
     }
-    channelBox.innerHTML = channelText;
+    voiceBox.innerHTML = voiceText;
 
     /* flip the play button on */
     playButton.value = "Pause";
@@ -253,7 +253,7 @@ function toggleViz(evt)
 </td>
 
 <td valign="top">
-<div id="channels"></div>
+<div id="voices"></div>
 </td>
 </tr>
 </table>
