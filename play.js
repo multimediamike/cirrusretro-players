@@ -276,7 +276,7 @@ cr.generateAudioCallback = function(audioProcessingEvent)
     {
         cr.firstAudioTimestamp = audioProcessingEvent.playbackTime;
         cr.audioStarted = true;
-        cr.drawOscope(0);
+        cr.drawViz(0);
     }
 };
 
@@ -311,22 +311,6 @@ cr.initOscope = function()
  */
 cr.drawOscope = function(timestamp)
 {
-    if (!cr.vizEnabled || !cr.canvas || cr.isPaused)
-        return;
-
-    timestamp /= 1000;
-    drawVisual = requestAnimationFrame(cr.drawOscope);
-
-    if (cr.nextTimestamp)
-    {
-        if (timestamp <= cr.nextTimestamp)
-            return;
-    }
-    else if (!cr.audioStarted || timestamp < cr.firstAudioTimestamp)
-    {
-        return;
-    }
-
     cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
@@ -349,19 +333,18 @@ cr.drawOscope = function(timestamp)
     {
         var index = segment + i;
         var center = (cr.canvasHeight / (2 * cr.actualChannels)) + (i * cr.canvasHeight / cr.actualChannels);
-        for (var x = 0; x < cr.canvasWidth; x++)
-        {
-            var y = center - (cr.vizBuffer[index] / divisor);
-            index += 2;
 
-            if(x === 0)
-            {
-                cr.canvasCtx.moveTo(x, y);
-            }
-            else
-            {
-                cr.canvasCtx.lineTo(x, y);
-            }
+        /* handle sample 0 */
+        var y = center - (cr.vizBuffer[index] / divisor);
+        index += 2;
+        cr.canvasCtx.moveTo(x, y);
+
+        /* plot the rest of the samples */
+        for (var x = 1; x < cr.canvasWidth; x++)
+        {
+            y = center - (cr.vizBuffer[index] / divisor);
+            index += 2;
+            cr.canvasCtx.lineTo(x, y);
         }
         cr.canvasCtx.stroke();
     }
@@ -376,7 +359,100 @@ cr.drawOscope = function(timestamp)
     cr.currentRed += cr.rInc;
     cr.currentGreen += cr.gInc;
     cr.currentBlue += cr.bInc;
+};
 
+/*
+ * Private function:
+ *  Draw a frame of the VU visualization.
+ */
+cr.drawVUMeter = function(timestamp)
+{
+    var MAX_VU = 20000;
+    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
+
+    if (cr.actualChannels > 1)
+    {
+        cr.canvasCtx.lineWidth = 1;
+        cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+        cr.canvasCtx.beginPath();
+        cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
+        cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
+        cr.canvasCtx.stroke();
+    }
+
+    var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
+    var divisor = 32768.0 / (cr.canvasHeight / (2 * cr.actualChannels));
+    var sumOfSquares = [0, 0];
+    for (var i = 0; i < cr.actualChannels; i++)
+    {
+        var index = segment + i;
+        var center = (cr.canvasHeight / (2 * cr.actualChannels)) + (i * cr.canvasHeight / cr.actualChannels);
+        for (var x = 0; x < cr.canvasWidth; x++)
+        {
+            sumOfSquares[i] += cr.vizBuffer[index] * cr.vizBuffer[index];
+            index += 2;
+        }
+    }
+
+    cr.canvasCtx.fillStyle = 'rgb(' + cr.currentRed + ', ' + cr.currentGreen + ', ' + cr.currentBlue + ')';
+    if (cr.actualChannels === 1)
+    {
+        cr.canvasCtx.fillRect(
+            0, 0,
+            Math.sqrt(sumOfSquares[0] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            cr.canvasHeight);
+    }
+    else
+    {
+        cr.canvasCtx.fillRect(
+            0, 0,
+            Math.sqrt(sumOfSquares[0] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            cr.canvasHeight / 2);
+        cr.canvasCtx.fillRect(
+            0, cr.canvasHeight / 2,
+            Math.sqrt(sumOfSquares[1] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            cr.canvasHeight);
+    }
+
+    /* play with colors */
+    if (cr.currentRed < 150 || cr.currentRed > 250)
+        cr.rInc *= -1;
+    if (cr.currentGreen < 150 || cr.currentGreen > 250)
+        cr.gInc *= -1;
+    if (cr.currentBlue < 150 || cr.currentBlue > 250)
+        cr.bInc *= -1;
+    cr.currentRed += cr.rInc;
+    cr.currentGreen += cr.gInc;
+    cr.currentBlue += cr.bInc;
+};
+
+/*
+ * Private function:
+ *  Draw a frame of the selected visualization.
+ */
+cr.drawViz = function(timestamp)
+{
+    if (!cr.vizEnabled || !cr.canvas || cr.isPaused)
+        return;
+
+    timestamp /= 1000;
+    drawVisual = requestAnimationFrame(cr.drawViz);
+
+    if (cr.nextTimestamp)
+    {
+        if (timestamp <= cr.nextTimestamp)
+            return;
+    }
+    else if (!cr.audioStarted || timestamp < cr.firstAudioTimestamp)
+    {
+        return;
+    }
+
+    /* draw the visualization */
+    cr.drawOscope(timestamp);
+
+    /* figure out the next timestamp */
     cr.nextTimestamp = timestamp + cr.FRAMERATE_DELTA;
 };
 
@@ -438,7 +514,7 @@ cr.enablePlayerAudio = function(enabled)
     if (enabled)
     {
         cr.isPaused = false;
-        requestAnimationFrame(cr.drawOscope);
+        requestAnimationFrame(cr.drawViz);
     }
     else
     {
@@ -463,7 +539,7 @@ cr.enablePlayerViz = function(enabled)
     cr.vizEnabled = enabled;
     if (cr.vizEnabled)
     {
-        requestAnimationFrame(cr.drawOscope);
+        requestAnimationFrame(cr.drawViz);
     }
     else
     {
