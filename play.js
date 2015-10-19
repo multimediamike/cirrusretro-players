@@ -38,6 +38,7 @@ cr.rInc = -1;
 cr.gInc = -2;
 cr.bInc = -3;
 cr.actualChannels = 2;
+cr.vuGradient = null;
 
 cr.playerFile = null;
 cr.currentTrack = 0;
@@ -297,6 +298,13 @@ cr.initViz = function()
     /* wipe canvas */
     cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
+
+    /* pertinent to VU meter viz */
+    cr.vuGradient = cr.canvasCtx.createLinearGradient(0, 0,
+        cr.canvasWidth, 0);
+    cr.vuGradient.addColorStop(0.0, "green");
+    cr.vuGradient.addColorStop(0.6, "yellow");
+    cr.vuGradient.addColorStop(1.0, "red");
 };
 
 /*
@@ -361,23 +369,15 @@ cr.drawOscope = function(timestamp)
  */
 cr.drawVUMeter = function(timestamp)
 {
-    var MAX_VU = 20000;
+    var MAX_VU = 12000;
+
     cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
-    if (cr.actualChannels > 1)
-    {
-        cr.canvasCtx.lineWidth = 1;
-        cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
-        cr.canvasCtx.beginPath();
-        cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
-        cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
-        cr.canvasCtx.stroke();
-    }
-
+    /* compute the RMS of the amplitude samples */
     var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
-    var divisor = 32768.0 / (cr.canvasHeight / (2 * cr.actualChannels));
     var sumOfSquares = [0, 0];
+    var rms = [];
     for (var i = 0; i < cr.actualChannels; i++)
     {
         var index = segment + i;
@@ -387,38 +387,42 @@ cr.drawVUMeter = function(timestamp)
             sumOfSquares[i] += cr.vizBuffer[index] * cr.vizBuffer[index];
             index += 2;
         }
+
+        /* compute the RMS */
+        rms[i] = Math.sqrt(sumOfSquares[i] / cr.canvasWidth)
     }
 
-    cr.canvasCtx.fillStyle = 'rgb(' + cr.currentRed + ', ' + cr.currentGreen + ', ' + cr.currentBlue + ')';
+    cr.canvasCtx.fillStyle = cr.vuGradient;
     if (cr.actualChannels === 1)
     {
         cr.canvasCtx.fillRect(
             0, 0,
-            Math.sqrt(sumOfSquares[0] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            rms[0] * cr.canvasWidth / MAX_VU,
             cr.canvasHeight);
     }
     else
     {
         cr.canvasCtx.fillRect(
             0, 0,
-            Math.sqrt(sumOfSquares[0] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            rms[0] * cr.canvasWidth / MAX_VU,
             cr.canvasHeight / 2);
         cr.canvasCtx.fillRect(
-            0, cr.canvasHeight / 2,
-            Math.sqrt(sumOfSquares[1] / cr.canvasWidth) * cr.canvasWidth / MAX_VU,
+            0,
+            cr.canvasHeight / 2,
+            rms[1] * cr.canvasWidth / MAX_VU,
             cr.canvasHeight);
     }
 
-    /* play with colors */
-    if (cr.currentRed < 150 || cr.currentRed > 250)
-        cr.rInc *= -1;
-    if (cr.currentGreen < 150 || cr.currentGreen > 250)
-        cr.gInc *= -1;
-    if (cr.currentBlue < 150 || cr.currentBlue > 250)
-        cr.bInc *= -1;
-    cr.currentRed += cr.rInc;
-    cr.currentGreen += cr.gInc;
-    cr.currentBlue += cr.bInc;
+    /* draw the channel dividing line last */
+    if (cr.actualChannels > 1)
+    {
+        cr.canvasCtx.lineWidth = 1;
+        cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+        cr.canvasCtx.beginPath();
+        cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
+        cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
+        cr.canvasCtx.stroke();
+    }
 };
 
 /*
@@ -444,7 +448,8 @@ cr.drawViz = function(timestamp)
     }
 
     /* draw the visualization */
-    cr.drawOscope(timestamp);
+    //cr.drawOscope(timestamp);
+    cr.drawVUMeter(timestamp);
 
     /* figure out the next timestamp */
     cr.nextTimestamp = timestamp + cr.FRAMERATE_DELTA;
