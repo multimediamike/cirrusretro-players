@@ -19,6 +19,7 @@ cr.source = null;  /* AudioBufferSourceNode */
 cr.FRAME_COUNT = 4096;
 
 /* visualization */
+cr.framesPerSecond = 30;
 cr.vizEnabled = true;
 cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
 cr.vizBuffer = new Int16Array(cr.vizBufferSize);
@@ -30,7 +31,7 @@ cr.canvasHeight = 0;
 cr.audioStarted = false;
 cr.firstAudioTimestamp = 0;
 cr.nextTimestamp = 0;
-cr.FRAMERATE_DELTA = 1.0/30;
+cr.FRAMERATE_DELTA = 1.0/cr.framesPerSecond;
 cr.currentRed = 250;
 cr.currentGreen = 250;
 cr.currentBlue = 250;
@@ -382,14 +383,15 @@ cr.drawVUMeter = function(timestamp)
     {
         var index = segment + i;
         var center = (cr.canvasHeight / (2 * cr.actualChannels)) + (i * cr.canvasHeight / cr.actualChannels);
-        for (var x = 0; x < cr.canvasWidth; x++)
+        var periodSize = cr.audioCtx.sampleRate / cr.framesPerSecond;
+        for (var x = 0; x < periodSize; x++)
         {
             sumOfSquares[i] += cr.vizBuffer[index] * cr.vizBuffer[index];
             index += 2;
         }
 
         /* compute the RMS */
-        rms[i] = Math.sqrt(sumOfSquares[i] / cr.canvasWidth)
+        rms[i] = Math.sqrt(sumOfSquares[i] / periodSize)
     }
 
     cr.canvasCtx.fillStyle = cr.vuGradient;
