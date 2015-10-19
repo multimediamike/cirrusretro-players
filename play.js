@@ -145,7 +145,7 @@ cr.crPlayerIsLoaded = function()
     }
 
     /* initialize the visualization */
-    cr.initOscope();
+    cr.initViz();
 
     /* tell the host code that the player is ready */
     cr.playerIsReadyCallback(null);
@@ -285,7 +285,7 @@ cr.generateAudioCallback = function(audioProcessingEvent)
  *  Initialize the oscilloscope based on the canvas that the module
  *  was initialized with.
  */
-cr.initOscope = function()
+cr.initViz = function()
 {
     if (!cr.canvas)
         return;
@@ -297,12 +297,6 @@ cr.initOscope = function()
     /* wipe canvas */
     cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
-    /* dividing center line */
-    cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
-    cr.canvasCtx.beginPath();
-    cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
-    cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
-    cr.canvasCtx.stroke();
 };
 
 /*
@@ -337,7 +331,7 @@ cr.drawOscope = function(timestamp)
         /* handle sample 0 */
         var y = center - (cr.vizBuffer[index] / divisor);
         index += 2;
-        cr.canvasCtx.moveTo(x, y);
+        cr.canvasCtx.moveTo(0, y);
 
         /* plot the rest of the samples */
         for (var x = 1; x < cr.canvasWidth; x++)
