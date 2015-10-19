@@ -199,7 +199,8 @@ cr.startAudio = function()
     cr.vizBufferIndex = 0;
     cr.isPaused = false;
 
-    /* start the source playing */
+    /* signal the source node to start triggering callbacks which will
+     * start generating audio */
     cr.source.start(0);
 };
 
@@ -285,8 +286,7 @@ cr.generateAudioCallback = function(audioProcessingEvent)
 
 /*
  * Private function:
- *  Initialize the oscilloscope based on the canvas that the module
- *  was initialized with.
+ *  Initialize variables used for the assorted visualizations.
  */
 cr.initViz = function()
 {
