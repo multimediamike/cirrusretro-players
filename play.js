@@ -19,6 +19,7 @@ cr.source = null;  /* AudioBufferSourceNode */
 cr.FRAME_COUNT = 4096;
 
 /* visualization */
+cr.vizType = "oscope";
 cr.framesPerSecond = 30;
 cr.vizEnabled = true;
 cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
@@ -314,9 +315,6 @@ cr.initViz = function()
  */
 cr.drawOscope = function(timestamp)
 {
-    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
-
     if (cr.actualChannels > 1)
     {
         cr.canvasCtx.lineWidth = 1;
@@ -371,9 +369,6 @@ cr.drawOscope = function(timestamp)
 cr.drawVUMeter = function(timestamp)
 {
     var MAX_VU = 12000;
-
-    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
     /* compute the RMS of the amplitude samples */
     var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
@@ -449,13 +444,52 @@ cr.drawViz = function(timestamp)
         return;
     }
 
+    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
+
     /* draw the visualization */
-    //cr.drawOscope(timestamp);
-    cr.drawVUMeter(timestamp);
+    if (cr.vizType == "oscope")
+        cr.drawOscope(timestamp);
+    else if (cr.vizType == "vumeter")
+        cr.drawVUMeter(timestamp);
 
     /* figure out the next timestamp */
     cr.nextTimestamp = timestamp + cr.FRAMERATE_DELTA;
 };
+
+/*
+ * Public function:
+ *  changeViz(viz)
+ *
+ * Change the current visualization.
+ *
+ * Input:
+ *  - vizType: A string with either "oscope", "vumeter", or "none". Any other
+ *     values have the same effect as "none".
+ *
+ * Output:
+ *  - undefined.
+ */
+cr.changeViz = function(vizType)
+{
+    cr.vizType = vizType;
+
+    if (cr.vizType == "none")
+    {
+        /* if the parameter asks to disable the visualization, set a flag
+         * that will disable animation callbacks; then, clear the canvas */
+        cr.vizEnabled = false;
+        cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+        cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
+    }
+    else if (!cr.vizEnabled)
+    {
+        /* if the viz was previously disabled, it is now being turned back
+         * on; thus, ask for animation callbacks again */
+        cr.vizEnabled = true;
+        requestAnimationFrame(cr.drawViz);
+    }
+}
 
 /*
  * Public function:
@@ -520,32 +554,6 @@ cr.enablePlayerAudio = function(enabled)
     else
     {
         cr.isPaused = true;
-    }
-};
-
-/*
- * Public function:
- *  enablePlayerViz(enabled)
- *
- * Enable/disable the audio visualization.
- *
- * Input:
- *  - enabled: true to display viz; false to disable display
- *
- * Output:
- *  - undefined
- */
-cr.enablePlayerViz = function(enabled)
-{
-    cr.vizEnabled = enabled;
-    if (cr.vizEnabled)
-    {
-        requestAnimationFrame(cr.drawViz);
-    }
-    else
-    {
-        cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-        cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
     }
 };
 

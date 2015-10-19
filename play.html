@@ -231,10 +231,9 @@ function tick()
     updateTimeField();
 }
 
-function toggleViz(evt)
+function changeViz(obj)
 {
-    var checkbox = document.getElementById('vizEnabled');
-    cr.enablePlayerViz(checkbox.checked);
+    cr.changeViz(obj.value);
 }
 
 </script>
@@ -248,7 +247,7 @@ function toggleViz(evt)
 <div id="testName"></div>
 </p>
 
-<canvas id="visualizer" width="500" height="250"></canvas>
+<canvas id="visualizer" width="500" height="200"></canvas>
 
 <table cellpadding="5">
 <tr>
@@ -257,11 +256,15 @@ function toggleViz(evt)
 <input type="button" id="prevButton" onclick="prevTrack()" value=" << ">
 <input type="button" id="playButton" onclick="toggleSound()" value="---">
 <input type="button" id="nextButton" onclick="nextTrack()" value=" >> ">
-<label><input type="checkbox" id="vizEnabled" onchange="toggleViz()" checked>Enable viz</label>
 </div>
 
 <div id="timeField">0:00</div>
 <div id="trackDisplay">---</div>
+<div>
+<input type="radio" onclick="changeViz(this)" name="viz-group" value="oscope" checked="checked">Oscope viz<br />
+<input type="radio" onclick="changeViz(this)" name="viz-group" value="vumeter">VU meter viz<br />
+<input type="radio" onclick="changeViz(this)" name="viz-group" value="none">Disable viz<br />
+</div>
 </td>
 
 <td valign="top">
