@@ -1,0 +1,58 @@
+# build architecture inspired by this page:
+# http://make.mad-scientist.net/papers/multi-architecture-builds/
+
+ifeq ($(notdir $(CURDIR)), cirrusretro-players)
+include target-aodsf.mk
+else
+
+TARGET:=cr-aosdk-dsf.js
+
+CC:=ccache emcc
+LD:=emcc
+
+OPT_LEVEL:=-Os
+
+AOSDK_SRCDIR=$(SRCDIR)/aosdk
+DSF_SRCDIR=$(SRCDIR)/aosdk/eng_dsf
+XZ_EMBEDDED_SRCDIR=$(SRCDIR)/xz-embedded
+
+VPATH=$(SRCDIR):$(AOSDK_SRCDIR):$(DSF_SRCDIR):$(XZ_EMBEDDED_SRCDIR)
+FINALDIR=$(SRCDIR)/final
+
+EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup']"
+
+# AODSF source files, plus the Cirrus Retro glue file
+AODSF_C_SOURCES:= \
+	aosdk_interface.c \
+	corlett.c \
+	aica.c \
+	aicadsp.c \
+	arm7.c \
+	arm7i.c \
+	dc_hw.c \
+	eng_dsf.c
+
+# XZ-embedded sources
+XZ_EMBEDDED_C_SOURCES:=xzdec.c \
+	xz_crc32.c \
+	xz_dec_lzma2.c \
+	xz_dec_stream.c
+
+# Emscripten gets nervous when C/C++ compile flags reference absolute paths;
+# '-Wno-warn-absolute-paths' tells the compiler not to worry
+CFLAGS:= -Wall -Wno-warn-absolute-paths $(OPT_LEVEL) -I$(SRCDIR) -I$(AOSDK_SRCDIR) -I$(DSF_SRCDIR) -I$(XZ_EMBEDDED_SRCDIR) -s ASSERTIONS=2 -DAOSDK_DSF
+
+AODSF_C_OBJECTS:=$(patsubst %.c,%.o,$(AODSF_C_SOURCES))
+XZ_EMBEDDED_C_OBJECTS:=$(patsubst %.c,%.o,$(XZ_EMBEDDED_C_SOURCES))
+PSFLIB_C_OBJECTS:=$(patsubst %.c,%.o,$(PSFLIB_C_SOURCES))
+
+# build rule for all C files
+%.o : %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+$(TARGET): $(AODSF_CXX_OBJECTS) $(AODSF_C_OBJECTS) $(XZ_EMBEDDED_C_OBJECTS)
+	$(LD) -o $(TARGET) $^ --memory-init-file 0 -Wall $(OPT_LEVEL) -s EXPORTED_FUNCTIONS=$(EXPORT_LIST) -s TOTAL_MEMORY=134217728 -s ASSERTIONS=2
+	mkdir -p $(FINALDIR)
+	cp $(TARGET)* $(FINALDIR)
+
+endif
