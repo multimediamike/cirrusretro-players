@@ -42,6 +42,9 @@ cr.gInc = -2;
 cr.bInc = -3;
 cr.actualChannels = 2;
 cr.vuGradient = null;
+cr.vuMax = [0, 0];
+cr.vuFallOffDelay = [cr.framesPerSecond / 4, cr.framesPerSecond / 4];
+cr.vuFallOffVelocity = [0, 0];
 
 cr.playerFile = null;
 cr.currentTrack = 0;
@@ -375,6 +378,7 @@ cr.drawVUMeter = function(timestamp)
     var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
     var sumOfSquares = [0, 0];
     var rms = [];
+    var rmsWidth = [];
     for (var i = 0; i < cr.actualChannels; i++)
     {
         var index = segment + i;
@@ -388,34 +392,66 @@ cr.drawVUMeter = function(timestamp)
 
         /* compute the RMS */
         rms[i] = Math.sqrt(sumOfSquares[i] / periodSize)
+        rmsWidth[i] = rms[i] * cr.canvasWidth / MAX_VU;
     }
 
+    /* fill the gradients */
     cr.canvasCtx.fillStyle = cr.vuGradient;
     if (cr.actualChannels === 1)
     {
         cr.canvasCtx.fillRect(
             0, 0,
-            rms[0] * cr.canvasWidth / MAX_VU,
+            rmsWidth[0],
             cr.canvasHeight);
     }
     else
     {
         cr.canvasCtx.fillRect(
             0, 0,
-            rms[0] * cr.canvasWidth / MAX_VU,
+            rmsWidth[0],
             cr.canvasHeight / 2);
         cr.canvasCtx.fillRect(
             0,
             cr.canvasHeight / 2,
-            rms[1] * cr.canvasWidth / MAX_VU,
+            rmsWidth[1],
             cr.canvasHeight);
     }
 
-    /* draw the channel dividing line last */
+    /* remainder of the drawing will be white lines */
+    cr.canvasCtx.lineWidth = 2;
+    cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
+
+    /* draw the max bars */
+    for (var i = 0; i < cr.actualChannels; i++)
+    {
+        /* check if there's a new maximum */
+        if (rmsWidth[i] >= cr.vuMax[i])
+        {
+            cr.vuMax[i] = rmsWidth[i];
+            cr.vuFallOffDelay[i] = cr.framesPerSecond / 4;
+            cr.vuFallOffVelocity[i] = 1.2;
+        }
+
+        /* check if it's time to start letting the bar fall */
+        if (cr.vuFallOffDelay[i] > 0)
+            cr.vuFallOffDelay[i]--;
+        else
+        {
+            cr.vuMax[i] -= Math.round(cr.vuFallOffVelocity[i]);
+            if (cr.vuMax[i] < 0)
+                cr.vuMax[i] = 0;
+            cr.vuFallOffVelocity[i] *= 1.2;
+        }
+
+        cr.canvasCtx.beginPath();
+        cr.canvasCtx.moveTo(cr.vuMax[i], i * (cr.canvasHeight / 2));
+        cr.canvasCtx.lineTo(cr.vuMax[i], (i + 1) * cr.canvasHeight / (1 * cr.actualChannels));
+        cr.canvasCtx.stroke();
+    }
+
+    /* draw the channel dividing line last, if the audio is stereo */
     if (cr.actualChannels > 1)
     {
-        cr.canvasCtx.lineWidth = 1;
-        cr.canvasCtx.strokeStyle = 'rgb(255, 255, 255)';
         cr.canvasCtx.beginPath();
         cr.canvasCtx.moveTo(0, cr.canvasHeight / 2);
         cr.canvasCtx.lineTo(cr.canvasWidth, cr.canvasHeight / 2);
