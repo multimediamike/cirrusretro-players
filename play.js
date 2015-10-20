@@ -20,6 +20,7 @@ cr.FRAME_COUNT = 4096;
 
 /* visualization */
 cr.vizType = "oscope";
+cr.vizTypeBeforeHiding = null;
 cr.framesPerSecond = 30;
 cr.vizEnabled = true;
 cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
@@ -489,6 +490,36 @@ cr.changeViz = function(vizType)
         cr.vizEnabled = true;
         requestAnimationFrame(cr.drawViz);
     }
+}
+
+/*
+ * Public function:
+ *  hideViz(viz)
+ *
+ * Hide the visualization. While the drawViz() function is provided for
+ * allowing the user the manually disable the visualization, this
+ * function is intended to be invoked when the tab hosting the visualization
+ * is hidden from user view, thus making it a pointlessly expensive
+ * operation to continue rendering the viz.
+ *
+ * This function remembers the currently selected viz and will restore it
+ * when the hideViz(true) is called.
+ *
+ * Input:
+ *  - hidden: true or false
+ *
+ * Output:
+ *  - undefined.
+ */
+cr.hideViz = function(hidden)
+{
+    if (hidden)
+    {
+        cr.vizTypeBeforeHiding = cr.vizType;
+        cr.changeViz("none");
+    }
+    else
+        cr.changeViz(cr.vizTypeBeforeHiding);
 }
 
 /*
