@@ -42,6 +42,7 @@ cr.gInc = -2;
 cr.bInc = -3;
 cr.actualChannels = 2;
 cr.vuGradient = null;
+cr.vuLastLevel = [0, 0];
 cr.vuMax = [0, 0];
 cr.vuFallOffDelay = [cr.framesPerSecond / 4, cr.framesPerSecond / 4];
 cr.vuFallOffVelocity = [0, 0];
@@ -372,12 +373,11 @@ cr.drawOscope = function(timestamp)
  */
 cr.drawVUMeter = function(timestamp)
 {
-    var MAX_VU = 12000;
+    var MAX_VU = 18000;
 
     /* compute the RMS of the amplitude samples */
     var segment = Math.round((cr.audioCtx.currentTime - cr.firstAudioTimestamp) * cr.vizBufferSize % cr.vizBufferSize);
     var sumOfSquares = [0, 0];
-    var rms = [];
     var rmsWidth = [];
     for (var i = 0; i < cr.actualChannels; i++)
     {
@@ -390,9 +390,15 @@ cr.drawVUMeter = function(timestamp)
             index += 2;
         }
 
-        /* compute the RMS */
-        rms[i] = Math.sqrt(sumOfSquares[i] / periodSize)
-        rmsWidth[i] = rms[i] * cr.canvasWidth / MAX_VU;
+        /* compute the RMS and width of VU bar */
+        var rms = Math.sqrt(sumOfSquares[i] / periodSize)
+        rmsWidth[i] = rms * cr.canvasWidth / MAX_VU;
+
+        /* if the calculation came up with NaN, use the previous level in
+         * order to mitigate blanking effects in the viz */
+        if (isNaN(rmsWidth[i]))
+            rmsWidth[i] = cr.vuLastLevel[i];
+        cr.vuLastLevel[i] = rmsWidth[i];
     }
 
     /* fill the gradients */
