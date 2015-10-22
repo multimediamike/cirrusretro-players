@@ -30,6 +30,7 @@ cr.canvas = null;
 cr.canvasCtx = null;
 cr.canvasWidth = 0;
 cr.canvasHeight = 0;
+cr.loadingBarFadeOut = 0;
 cr.audioStarted = false;
 cr.firstAudioTimestamp = 0;
 cr.nextTimestamp = 0;
@@ -70,6 +71,16 @@ cr.musicLoadEvent = function(evt)
 {
     if (evt.type == "progress")
     {
+        /* draw the progress bar on the canvas (if available) */
+        if (cr.canvas)
+        {
+            cr.canvasCtx.fillStyle = 'rgb(180, 180, 180)';
+            cr.canvasCtx.fillRect(0, 0,
+            cr.canvasWidth * evt.loaded / evt.total,
+            cr.canvasHeight);
+        }
+
+        /* let the client program know about the progress */
         if (cr.loadProgressCallback)
         {
             cr.loadProgressCallback(evt.loaded, evt.total);
@@ -77,6 +88,8 @@ cr.musicLoadEvent = function(evt)
     }
     else if (evt.type == "load")
     {
+        cr.loadingBarFadeOut = 180;
+
         /* copy the response bytes to a typed array */
         cr.musicResponseBytes = new Uint8Array(evt.target.response);
 
@@ -151,9 +164,6 @@ cr.crPlayerIsLoaded = function()
         cr.playerIsReadyCallback("Problem: voice count is " + cr.voiceCount);
         return;
     }
-
-    /* initialize the visualization */
-    cr.initViz();
 
     /* tell the host code that the player is ready */
     cr.playerIsReadyCallback(null);
@@ -487,7 +497,17 @@ cr.drawViz = function(timestamp)
         return;
     }
 
-    cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    if (cr.loadingBarFadeOut > 0)
+    {
+        cr.loadingBarFadeOut -= 6;
+        var c = cr.loadingBarFadeOut.toString();
+        var colorStr = 'rgb(' + c + ',' + c + ',' + c + ')';
+        cr.canvasCtx.fillStyle = colorStr;
+    }
+    else
+    {
+        cr.canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+    }
     cr.canvasCtx.fillRect(0, 0, cr.canvasWidth, cr.canvasHeight);
 
     /* draw the visualization */
@@ -593,6 +613,9 @@ cr.initializePlayer = function(player, musicUrl, hostCanvas, loadProgress, playe
     cr.currentTrack = firstTrack;
 
     cr.tickCountdown = cr.audioCtx.sampleRate;
+
+    /* initialize the visualization */
+    cr.initViz();
 
     /* load the music file first */
     var musicFile = new XMLHttpRequest();
