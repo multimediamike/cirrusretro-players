@@ -48,7 +48,13 @@ cr.vuMax = [0, 0];
 cr.vuFallOffDelay = [cr.framesPerSecond / 4, cr.framesPerSecond / 4];
 cr.vuFallOffVelocity = [0, 0];
 
-cr.playerFile = null;
+/* network loading */
+cr.playerUrl = null;
+cr.musicUrl = null;
+cr.playerBytesLoaded = 0;
+cr.musicBytesLoaded = 0;
+cr.totalBytesExpected = 0;
+cr.filesToLoad = 0;
 cr.currentTrack = 0;
 cr.musicResponseBytes = null;
 cr.playerContext = null;
@@ -62,44 +68,82 @@ cr.voiceCount = 0;
 
 /*
  * Private function:
- *  musicLoadEvent(evt)
+ *  loadEvent(evt)
  *
  * This callback is invoked for music progress/load/error events. When
  * the music is fully loaded, go to the next phase of loading the player.
  */
-cr.musicLoadEvent = function(evt)
+cr.loadEvent = function(evt)
 {
+    if (evt.currentTarget.responseURL.endsWith(".js") ||
+        evt.currentTarget.responseURL.endsWith(".jsgz"))
+        playerLoadEvent = true;
+    else
+        playerLoadEvent = false;
+
+    var totalBytesLoaded = cr.playerBytesLoaded + cr.musicBytesLoaded;
+
     if (evt.type == "progress")
     {
+        if (playerLoadEvent)
+            cr.playerBytesLoaded = evt.loaded;
+        else
+            cr.musicBytesLoaded = evt.loaded;
+
+        totalBytesLoaded = cr.playerBytesLoaded + cr.musicBytesLoaded;
+
         /* draw the progress bar on the canvas (if available) */
         if (cr.canvas)
         {
             cr.canvasCtx.fillStyle = 'rgb(180, 180, 180)';
             cr.canvasCtx.fillRect(0, 0,
-            cr.canvasWidth * evt.loaded / evt.total,
-            cr.canvasHeight);
+                cr.canvasWidth * totalBytesLoaded / cr.totalBytesExpected,
+                cr.canvasHeight);
         }
 
         /* let the client program know about the progress */
         if (cr.loadProgressCallback)
         {
-            cr.loadProgressCallback(evt.loaded, evt.total);
+            cr.loadProgressCallback(totalBytesLoaded, cr.totalBytesExpected);
         }
     }
-    else if (evt.type == "load")
-    {
-        cr.loadingBarFadeOut = 180;
 
+    if (evt.type == "load" && playerLoadEvent == true)
+    {
+        /* player is loaded; start the eval process */
+console.log("running eval()...");
+        ret = eval(evt.target.response);
+console.log("finished eval()", ret);
+    }
+
+    else if (evt.type == "load" && playerLoadEvent == false)
+    {
         /* copy the response bytes to a typed array */
         cr.musicResponseBytes = new Uint8Array(evt.target.response);
 
-        /* request the player to be loaded */
-        var script = document.createElement('script');
-        script.src = cr.playerFile;
-        script.onload = cr.crPlayerIsLoaded;
-        document.head.appendChild(script);
+        cr.filesToLoad--;
+        if (cr.filesToLoad == 0)
+            cr.crPlayerIsLoaded();
     }
 };
+
+var Module = {};
+Module['onRuntimeInitialized'] = function()
+{
+console.log("Callback!");
+    cr.filesToLoad--;
+    if (cr.filesToLoad == 0)
+        cr.crPlayerIsLoaded();
+};
+
+/*
+crPlayerIsReady = function()
+{
+    cr.filesToLoad--;
+    if (cr.filesToLoad == 0)
+        cr.crPlayerIsLoaded();
+}
+*/
 
 /*
  * Private function:
@@ -115,6 +159,9 @@ cr.musicLoadEvent = function(evt)
  */
 cr.crPlayerIsLoaded = function()
 {
+console.log("cr.crPlayerIsLoaded");
+    cr.loadingBarFadeOut = 180;
+
     /* create a private context for the player to use */
     var contextSize = _crPlayerContextSize();
     /* the context size really should be non-zero */
@@ -586,13 +633,17 @@ cr.hideViz = function(hidden)
 
 /*
  * Public function:
- *  initializePlayer(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
+ *  initializePlayer(playerUrl, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
  *
  * Initialize a Cirrus Retro player.
  *
  * Input:
- *  - player: URL of the player JavaScript
- *  - musicUrl: URL of the music file to be played
+ *  - playerUrl: object referring to the JavaScript player; attributes:
+ *    - url: URL of the player
+ *    - size: size (in bytes) of the player
+ *  - musicUrl: object referring to the the music file; attributes:
+ *    - url: URL of the music file
+ *    - size: size (in bytes) of the file
  *  - hostCanvas: A canvas for visualization, or null for no viz
  *  - loadProgress: A callback to indicate how much music has loaded; has
  *     2 parameters: (bytesLoaded, bytesTotal)
@@ -603,29 +654,46 @@ cr.hideViz = function(hidden)
  * Output:
  *  undefined: this doesn't fail; it merely sets events in motion
  */
-cr.initializePlayer = function(player, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
+cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
 {
-    cr.playerFile = player;
+    cr.playerUrl = playerUrl;
+    cr.musicUrl = musicUrl;
+
+    /* save the callbacks */
     cr.playerIsReadyCallback = playerIsReady;
     cr.loadProgressCallback = loadProgress
     cr.tickCallback = tick;
     cr.canvas = hostCanvas;
     cr.currentTrack = firstTrack;
 
+    cr.totalBytesExpected = playerUrl.size + musicUrl.size;
+
     cr.tickCountdown = cr.audioCtx.sampleRate;
 
     /* initialize the visualization */
     cr.initViz();
 
+    cr.filesToLoad = 2;
+
     /* load the music file first */
     var musicFile = new XMLHttpRequest();
-    musicFile.addEventListener("progress", cr.musicLoadEvent);
-    musicFile.addEventListener("load", cr.musicLoadEvent);
-    musicFile.addEventListener("error", cr.musicLoadEvent);
-    musicFile.addEventListener("abort", cr.musicLoadEvent);
-    musicFile.open("GET", musicUrl);
+    musicFile.addEventListener("progress", cr.loadEvent);
+    musicFile.addEventListener("load", cr.loadEvent);
+    musicFile.addEventListener("error", cr.loadEvent);
+    musicFile.addEventListener("abort", cr.loadEvent);
+    musicFile.open("GET", musicUrl.url);
     musicFile.responseType = "arraybuffer";
     musicFile.send();
+
+    /* load the player file in parallel */
+    var playerFile = new XMLHttpRequest();
+    playerFile.addEventListener("progress", cr.loadEvent);
+    playerFile.addEventListener("load", cr.loadEvent);
+    playerFile.addEventListener("error", cr.loadEvent);
+    playerFile.addEventListener("abort", cr.loadEvent);
+    playerFile.open("GET", playerUrl.url);
+    musicFile.responseType = "text";
+    playerFile.send();
 };
 
 /*
