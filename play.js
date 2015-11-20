@@ -110,10 +110,11 @@ cr.loadEvent = function(evt)
 
     if (evt.type == "load" && playerLoadEvent == true)
     {
-        /* player is loaded; start the eval process */
-console.log("running eval()...");
-        ret = eval(evt.target.response);
-console.log("finished eval()", ret);
+        /* player got loaded once; discard and load from cache */
+        var script = document.createElement('script');
+        script.src = cr.playerUrl.url;
+        script.onload = cr.playerLoadedFromScriptElement;
+        document.head.appendChild(script);
     }
 
     else if (evt.type == "load" && playerLoadEvent == false)
@@ -121,33 +122,41 @@ console.log("finished eval()", ret);
         /* copy the response bytes to a typed array */
         cr.musicResponseBytes = new Uint8Array(evt.target.response);
 
-        cr.filesToLoad--;
-        if (cr.filesToLoad == 0)
-            cr.crPlayerIsLoaded();
+        /* download accounting */
+        cr.aFileWasLoaded();
     }
 };
 
-var Module = {};
-Module['onRuntimeInitialized'] = function()
-{
-console.log("Callback!");
-    cr.filesToLoad--;
-    if (cr.filesToLoad == 0)
-        cr.crPlayerIsLoaded();
-};
-
 /*
-crPlayerIsReady = function()
+ * Private function:
+ *  playerLoadedFromScriptElement()
+ *
+ * This function is called after the script element is finished loading
+ * and initializing the player JS (hopefully from cache).
+ */
+cr.playerLoadedFromScriptElement = function()
 {
-    cr.filesToLoad--;
-    if (cr.filesToLoad == 0)
-        cr.crPlayerIsLoaded();
+    /* download accounting */
+    cr.aFileWasLoaded();
 }
-*/
 
 /*
  * Private function:
- *  crPlayerIsLoaded()
+ *  aFileWasLoaded()
+ *
+ * Performs file download accounting and moves on to the next phase if
+ * all downloads have completed.
+ */
+cr.aFileWasLoaded = function()
+{
+    cr.filesToLoad--;
+    if (cr.filesToLoad == 0)
+        cr.resourcesLoaded();
+}
+
+/*
+ * Private function:
+ *  resourcesLoaded()
  *
  * This function is called after various resources (music and players)
  * have been loaded. It attempts to initialize the player using the music
@@ -157,9 +166,8 @@ crPlayerIsReady = function()
  * to the callback is either null if everything initialized correctly, or
  * a string to describe what failed.
  */
-cr.crPlayerIsLoaded = function()
+cr.resourcesLoaded = function()
 {
-console.log("cr.crPlayerIsLoaded");
     cr.loadingBarFadeOut = 180;
 
     /* create a private context for the player to use */
@@ -216,6 +224,17 @@ console.log("cr.crPlayerIsLoaded");
     cr.playerIsReadyCallback(null);
 };
 
+/* Public function:
+ *  setTrack(track)
+ *
+ * This function sets a new track within the music file.
+ *
+ * Input:
+ *  - track: the 0-offset track number
+ *
+ * Output:
+ *  - undefined
+ */
 cr.setTrack = function(track)
 {
     cr.currentTrack = track;
@@ -268,7 +287,15 @@ cr.startAudio = function()
 
 /*
  * Private function:
- *  callback for generating more audio
+ *  generateAudioCallback()
+ *
+ * This callback is invoked by the Web Audio API to generating more audio.
+ *
+ * Input:
+ *  - audioProcessingEvent: An object of type AudioProcessingEvent.
+ *
+ * Output:
+ *  - undefined
  */
 cr.generateAudioCallback = function(audioProcessingEvent)
 {
@@ -314,7 +341,7 @@ cr.generateAudioCallback = function(audioProcessingEvent)
     if (cr.tickCountdown < 0)
     {
         cr.tickCountdown += cr.audioCtx.sampleRate;
-        if (cr.tickCallback)
+        if (typeof(cr.tickCallback) == "function")
             cr.tickCallback();
     }
 
@@ -348,7 +375,15 @@ cr.generateAudioCallback = function(audioProcessingEvent)
 
 /*
  * Private function:
- *  Initialize variables used for the assorted visualizations.
+ *  initViz()
+ *
+ * Initialize variables used for the assorted visualizations.
+ *
+ * Input:
+ *  - none
+ *
+ * Output:
+ *  - undefined
  */
 cr.initViz = function()
 {
@@ -373,9 +408,17 @@ cr.initViz = function()
 
 /*
  * Private function:
- *  Draw a frame of the oscilloscope visualization.
+ *  drawOscope
+ *
+ * Draw a frame of the oscilloscope visualization.
+ *
+ * Input:
+ *  - none
+ *
+ * Output:
+ *  - undefined
  */
-cr.drawOscope = function(timestamp)
+cr.drawOscope = function()
 {
     if (cr.actualChannels > 1)
     {
@@ -426,9 +469,17 @@ cr.drawOscope = function(timestamp)
 
 /*
  * Private function:
- *  Draw a frame of the VU visualization.
+ *  drawVUMeter
+ *
+ * Draw a frame of the VU visualization.
+ *
+ * Input:
+ *  - none
+ *
+ * Output:
+ *  - undefined
  */
-cr.drawVUMeter = function(timestamp)
+cr.drawVUMeter = function()
 {
     var MAX_VU = 18000;
 
@@ -524,7 +575,15 @@ cr.drawVUMeter = function(timestamp)
 
 /*
  * Private function:
- *  Draw a frame of the selected visualization.
+ *  drawViz()
+ *
+ * Draw a frame of the selected visualization.
+ *
+ * Input:
+ *  - timestamp: floating point number representing timestamp in seconds
+ *
+ * Output:
+ *  - undefined
  */
 cr.drawViz = function(timestamp)
 {
@@ -652,7 +711,7 @@ cr.hideViz = function(hidden)
  *  - firstTrack: 0-based track to start with
  *
  * Output:
- *  undefined: this doesn't fail; it merely sets events in motion
+ *  - undefined: this doesn't fail; it merely sets events in motion
  */
 cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, playerIsReady, tick, firstTrack)
 {
@@ -685,14 +744,16 @@ cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, pl
     musicFile.responseType = "arraybuffer";
     musicFile.send();
 
-    /* load the player file in parallel */
+    /* Load the player file in parallel. This potentially loads the player
+     * from the remote server (although the JS might already be cached
+     * locally), but will promptly drop it after loading. This phase only
+     * serves to allow progress events for UX. */
     var playerFile = new XMLHttpRequest();
     playerFile.addEventListener("progress", cr.loadEvent);
     playerFile.addEventListener("load", cr.loadEvent);
     playerFile.addEventListener("error", cr.loadEvent);
     playerFile.addEventListener("abort", cr.loadEvent);
     playerFile.open("GET", playerUrl.url);
-    musicFile.responseType = "text";
     playerFile.send();
 };
 
