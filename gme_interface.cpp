@@ -235,11 +235,3 @@ void crPlayerCleanup(void *context)
     gme->emu = NULL;
 }
 
-int main()
-{
-    EM_ASM(
-        if (typeof(crPlayerIsReady) == "function")
-            crPlayerIsReady();
-    );
-    return 0;
-}
