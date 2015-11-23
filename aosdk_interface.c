@@ -15,6 +15,8 @@
 
 #define PSFARCHIVE_SIG "PSF Song Archive"
 #define PSFARCHIVE_SIG_LEN 16
+#define PSF_XZ_SIG "psf"
+#define PSF_XZ_SIG_LEN 3
 #define GET_LE32(x) ((((uint8_t*)(x))[3] << 24) | \
                      (((uint8_t*)(x))[2] << 16) | \
                      (((uint8_t*)(x))[1] << 8) | \
@@ -38,6 +40,7 @@ typedef struct
     int sampleRate;
     int entryCount;
     fileEntry *entries;
+    int isPsfArchive;
 } aosdkContext;
 
 typedef struct
@@ -102,6 +105,7 @@ int crPlayerInitialize(void *context, int sampleRate)
     aosdk->sampleRate = sampleRate;
     aosdk->entryCount = 0;
     aosdk->entries = NULL;
+    aosdk->isPsfArchive = 0;
 
     /* keep a global copy of the context in this file's namespace since
      * the AOSDK file load callback function doesn't offer a user parm */
@@ -124,7 +128,23 @@ int crPlayerLoadFile(void *context, const char *filename, unsigned char *data,
     aosdk->dataBufferSize = size;
 
     /* minimally validate the file */
-    if (strncmp((char *)aosdk->dataBuffer, PSFARCHIVE_SIG, PSFARCHIVE_SIG_LEN) != 0)
+    if (strncmp((char *)aosdk->dataBuffer, PSFARCHIVE_SIG, PSFARCHIVE_SIG_LEN) == 0)
+        aosdk->isPsfArchive = 1;
+    else if (strncmp((char *)aosdk->dataBuffer, PSF_XZ_SIG, PSF_XZ_SIG_LEN) == 0)
+    {
+#if defined(AOSDK_SSF)
+        if (aosdk->dataBuffer[3] != 0x11)
+#elif defined(AOSDK_DSF)
+        if (aosdk->dataBuffer[3] != 0x12)
+#else
+    #error No valid PSF type specified during compilation
+#endif
+            return 0;
+
+        aosdk->isPsfArchive = 0;
+        return 1;
+    }
+    else
         return 0;
 
     /* load the virtual file system within the psfarchive file */
@@ -154,15 +174,27 @@ int crPlayerSetTrack(void *context, int track)
     unsigned int size = 0;
     unsigned char *dataCopy = NULL;
 
-    /* check that the track number is valid and fetch the root name */
-    if (track >= aosdk->entryCount)
-        return 0;
-    offset = aosdk->entries[track].offset;
-    size = aosdk->entries[track].size;
-    dataCopy = (unsigned char*)malloc(size);
-    if (!dataCopy)
-        return 0;
-    memcpy(dataCopy, &aosdk->dataBuffer[offset], size);
+    if (aosdk->isPsfArchive)
+    {
+        /* check that the track number is valid and fetch the root name */
+        if (track >= aosdk->entryCount)
+            return 0;
+        offset = aosdk->entries[track].offset;
+        size = aosdk->entries[track].size;
+        dataCopy = (unsigned char*)malloc(size);
+        if (!dataCopy)
+            return 0;
+        memcpy(dataCopy, &aosdk->dataBuffer[offset], size);
+    }
+    else
+    {
+        size = aosdk->dataBufferSize;
+        dataCopy = (unsigned char*)malloc(size);
+        if (!dataCopy)
+            return 0;
+        memcpy(dataCopy, aosdk->dataBuffer, size);
+    }
+
 #if defined(AOSDK_DSF)
     if (!dsf_start(dataCopy, size))
 #elif defined(AOSDK_SSF)
