@@ -50,6 +50,7 @@ cr.vuFallOffVelocity = [0, 0];
 
 /* network loading */
 cr.playerUrl = null;
+cr.playerSize = -1;
 cr.musicUrl = null;
 cr.playerBytesLoaded = 0;
 cr.musicBytesLoaded = 0;
@@ -83,6 +84,13 @@ cr.loadEvent = function(evt)
 
     var totalBytesLoaded = cr.playerBytesLoaded + cr.musicBytesLoaded;
 
+    /* fetch the size of the player JS if not already seen */
+    if (cr.playerSize == -1 && playerLoadEvent)
+    {
+        cr.playerSize = evt.total;
+        cr.totalBytesExpected += cr.playerSize;
+    }
+
     if (evt.type == "progress")
     {
         if (playerLoadEvent)
@@ -91,6 +99,13 @@ cr.loadEvent = function(evt)
             cr.musicBytesLoaded = evt.loaded;
 
         totalBytesLoaded = cr.playerBytesLoaded + cr.musicBytesLoaded;
+
+        /* only process the the progress event if the total player JS size
+         * has been observed */
+        if (cr.playerSize == -1)
+        {
+            return;
+        }
 
         /* draw the progress bar on the canvas (if available) */
         if (cr.canvas)
@@ -112,7 +127,7 @@ cr.loadEvent = function(evt)
     {
         /* player got loaded once; discard and load from cache */
         var script = document.createElement('script');
-        script.src = cr.playerUrl.url;
+        script.src = cr.playerUrl;
         script.onload = cr.playerLoadedFromScriptElement;
         document.head.appendChild(script);
     }
@@ -697,9 +712,7 @@ cr.hideViz = function(hidden)
  * Initialize a Cirrus Retro player.
  *
  * Input:
- *  - playerUrl: object referring to the JavaScript player; attributes:
- *    - url: URL of the player
- *    - size: size (in bytes) of the player
+ *  - playerUrl: URL referring to the JavaScript player
  *  - musicUrl: object referring to the the music file; attributes:
  *    - url: URL of the music file
  *    - size: size (in bytes) of the file
@@ -725,7 +738,7 @@ cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, pl
     cr.canvas = hostCanvas;
     cr.currentTrack = firstTrack;
 
-    cr.totalBytesExpected = playerUrl.size + musicUrl.size;
+    cr.totalBytesExpected = musicUrl.size;
 
     cr.tickCountdown = cr.audioCtx.sampleRate;
 
@@ -753,7 +766,7 @@ cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, pl
     playerFile.addEventListener("load", cr.loadEvent);
     playerFile.addEventListener("error", cr.loadEvent);
     playerFile.addEventListener("abort", cr.loadEvent);
-    playerFile.open("GET", playerUrl.url);
+    playerFile.open("GET", playerUrl);
     playerFile.send();
 };
 

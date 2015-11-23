@@ -161,9 +161,7 @@ function loadTest(testNumber)
     elem.innerHTML = "Testing '" + musicTest['name'] + "' (refresh page to test another player)";
 
     /* initialize the player */
-    playerUrl = Object();
-    playerUrl.url = musicTest['player'];
-    playerUrl.size = musicTest['playerSize'];
+    playerUrl = musicTest['player'];
     musicUrl = Object();
     musicUrl.url = musicTest['musicUrl'];
     musicUrl.size = musicTest['musicSize'];
