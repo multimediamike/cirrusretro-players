@@ -44,7 +44,6 @@ CFLAGS:= -Wall -Wno-warn-absolute-paths $(OPT_LEVEL) -I$(SRCDIR) -I$(AOSDK_SRCDI
 
 AODSF_C_OBJECTS:=$(patsubst %.c,%.o,$(AODSF_C_SOURCES))
 XZ_EMBEDDED_C_OBJECTS:=$(patsubst %.c,%.o,$(XZ_EMBEDDED_C_SOURCES))
-PSFLIB_C_OBJECTS:=$(patsubst %.c,%.o,$(PSFLIB_C_SOURCES))
 
 # build rule for all C files
 %.o : %.c
