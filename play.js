@@ -125,11 +125,14 @@ cr.loadEvent = function(evt)
 
     if (evt.type == "load" && playerLoadEvent == true)
     {
-        /* player got loaded once; discard and load from cache */
-        var script = document.createElement('script');
-        script.src = cr.playerUrl;
-        script.onload = cr.playerLoadedFromScriptElement;
-        document.head.appendChild(script);
+        /* player has been loaded; create a tag */
+        var tag = document.createElement('script');
+        /* put the player JS into the tag */
+        tag.text = this.responseText;
+        /* add the tag to the DOM; this wll return when the player is ready */
+        document.documentElement.appendChild(tag);
+        /* download accounting */
+        cr.aFileWasLoaded();
     }
 
     else if (evt.type == "load" && playerLoadEvent == false)
@@ -141,19 +144,6 @@ cr.loadEvent = function(evt)
         cr.aFileWasLoaded();
     }
 };
-
-/*
- * Private function:
- *  playerLoadedFromScriptElement()
- *
- * This function is called after the script element is finished loading
- * and initializing the player JS (hopefully from cache).
- */
-cr.playerLoadedFromScriptElement = function()
-{
-    /* download accounting */
-    cr.aFileWasLoaded();
-}
 
 /*
  * Private function:
