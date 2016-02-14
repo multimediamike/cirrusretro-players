@@ -5,9 +5,11 @@ import glob
 import multiprocessing
 import tempfile
 
+NODE = "node"
+
 def runTest(spec):
     tf = tempfile.NamedTemporaryFile(suffix='.wav')
-    command = "NODE_PATH=$PWD/final /usr/bin/nodejs cr-test-harness.js %s %s" % (spec, tf.name)
+    command = "NODE_PATH=$PWD/final %s cr-test-harness.js %s %s" % (NODE, spec, tf.name)
     (status, output) = commands.getstatusoutput(command)
     return { 'spec': spec, 'status': status, 'output': output }
 
