@@ -31,8 +31,8 @@ Clean intermediate files using `make clean`.
 
 Note that the build script uses the '-j' option which does not limit the
 number of parallel build jobs. Specify the environment variable
-`BUILD_JOBS` in order to limit the number of jobs. E.g.:
-`BUILD_JOBS=2 make` will only build using 2 processes.
+`BUILD_THREADS` in order to limit the number of jobs. E.g.:
+`BUILD_THREADS=2 make` will only build using 2 processes.
 
 ## Testing
 Run the script './run-tests.py' to run the integration tests and
