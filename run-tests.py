@@ -3,6 +3,7 @@
 import commands
 import glob
 import multiprocessing
+import sys
 import tempfile
 
 NODE = "node"
@@ -14,6 +15,13 @@ def runTest(spec):
     return { 'spec': spec, 'status': status, 'output': output }
 
 if __name__ == "__main__":
+    # test if Node.js command is in the path
+    command = "%s -v" % (NODE)
+    (status, output) = commands.getstatusoutput(command)
+    if status != 0:
+        print "'node' not found in path"
+        sys.exit(1)
+
     testSpecs = glob.glob("test-specs/*.json")
     pool = multiprocessing.Pool()
     it = pool.imap_unordered(runTest, testSpecs);
