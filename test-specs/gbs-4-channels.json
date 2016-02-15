@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/battletoads.gbs.xz",
+    "decompressed-size": 13316,
+    "player": "cr-gme-gbs.js",
+    "track": 2,
+    "expected-output-channels": 2,
+    "expected-voice-count": 4,
+    "expected-voice-names": ["Square 1", "Square 2", "Wave", "Noise"],
+    "expected-md5": "f2bdf88ad929a2e291d0a7cac0d97bee"
+}

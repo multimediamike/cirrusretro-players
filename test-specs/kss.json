@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/ultima-exodus.kss.xz",
+    "decompressed-size": 8272,
+    "player": "cr-gme-kss.js",
+    "track": 1,
+    "expected-output-channels": 1,
+    "expected-voice-count": 8,
+    "expected-voice-names": ["Square 1", "Square 2", "Square 3", "Wave 1", "Wave 2", "Wave 3", "Wave 4", "Wave 5"],
+    "expected-md5": "5ea4e73a003b71c5f5f6bf03db46a8a8"
+}

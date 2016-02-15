@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/lady-sword.hes.xz",
+    "decompressed-size": 16384,
+    "player": "cr-gme-hes.js",
+    "track": 0,
+    "expected-output-channels": 1,
+    "expected-voice-count": 6,
+    "expected-voice-names": ["Wave 1", "Wave 2", "Wave 3", "Wave 4", "Multi 1", "Multi 2"],
+    "expected-md5": "a2434d90d9783f20d6f7f071eb9f270c"
+}

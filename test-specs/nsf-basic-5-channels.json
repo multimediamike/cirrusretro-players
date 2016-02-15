@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/batman.nsf.xz",
+    "decompressed-size": 17997,
+    "player": "cr-gme-nsf.js",
+    "track": 4,
+    "expected-output-channels": 1,
+    "expected-voice-count": 5,
+    "expected-voice-names": ["Square 1", "Square 2", "Triangle", "Noise", "DMC"],
+    "expected-md5": "57be83f91695ce407e9e20e3a5550701"
+}

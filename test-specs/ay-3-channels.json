@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/burnin-rubber.ay.xz",
+    "player": "cr-gme-ay.js",
+    "track": 0,
+    "decompressed-size": 5432,
+    "expected-output-channels": 1,
+    "expected-voice-count": 4,
+    "expected-voice-names": ["Wave 1", "Wave 2", "Wave 3", "Beeper"],
+    "expected-md5": "6b43ba98bbc97c2303ca7062939aaf46"
+}

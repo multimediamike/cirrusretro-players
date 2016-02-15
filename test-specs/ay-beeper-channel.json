@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/jet-set-willy.ay.xz",
+    "decompressed-size": 545,
+    "player": "cr-gme-ay.js",
+    "track": 0,
+    "expected-output-channels": 1,
+    "expected-voice-count": 4,
+    "expected-voice-names": ["Wave 1", "Wave 2", "Wave 3", "Beeper"],
+    "expected-md5": "360d3674dc6a1c7ff6e3491f4953f0d5"
+}
