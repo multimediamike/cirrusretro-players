@@ -34,6 +34,14 @@ number of parallel build jobs. Specify the environment variable
 `BUILD_THREADS` in order to limit the number of jobs. E.g.:
 `BUILD_THREADS=2 make` will only build using 2 processes.
 
+## Demonstration
+After building the players, you can run the included demo web server to
+see the files in action. Run './cr-test-server.py' and point a web browser at
+the server. You will be able to select a type of music files to play and test
+out the various player features, including visualizations, channel toggling,
+track advancement, playback time reporting, and pause/resume (TODO: demonstrate
+volume control).
+
 ## Testing
 Run the script './run-tests.py' to run the integration tests and
 validate that all the players are working correctly. This requires
