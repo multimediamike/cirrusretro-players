@@ -1,0 +1,10 @@
+{
+    "filename": "music-samples/Mountain_King.sap.xz",
+    "decompressed-size": 753,
+    "player": "cr-gme-sap.js",
+    "track": 0,
+    "expected-output-channels": 1,
+    "expected-voice-count": 4,
+    "expected-voice-names": ["Wave 1", "Wave 2", "Wave 3", "Wave 4"],
+    "expected-md5": "d9bd0a4d0f9108008e883cc0a37c9312"
+}
