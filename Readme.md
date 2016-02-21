@@ -39,8 +39,7 @@ After building the players, you can run the included demo web server to
 see the files in action. Run './cr-test-server.py' and point a web browser at
 the server. You will be able to select a type of music files to play and test
 out the various player features, including visualizations, channel toggling,
-track advancement, playback time reporting, and pause/resume (TODO: demonstrate
-volume control).
+track advancement, playback time reporting, volume control, and pause/resume.
 
 ## Testing
 Run the script './run-tests.py' to run the integration tests and

@@ -250,6 +250,12 @@ function changeViz(obj)
     cr.changeViz(obj.value);
 }
 
+function changeVolume(id)
+{
+    var volumeSlider = document.getElementById('volumeSlider');
+    cr.setVolume(volumeSlider.value);
+}
+
 </script>
 
 </head>
@@ -273,6 +279,7 @@ function changeViz(obj)
 </div>
 
 <div id="timeField">0:00</div>
+<div id="volume">Volume: <input id="volumeSlider" type="range" min="0" max="255" value="255" onchange="changeVolume()" oninput="changeVolume()"></div>
 <div id="trackDisplay">---</div>
 <div>
 <input type="radio" onclick="changeViz(this)" name="viz-group" value="oscope" checked="checked">Oscope viz<br />
