@@ -1,22 +1,23 @@
 #kssplay Makefile
 
-BIN = kssplay
+JS = cr-kssplay.js
 
 OBJECTS = convert.o libkss.o kmz80.o device.o main.c
-CC = gcc
+CC = emcc
+OPT_LEVEL = -Os
+EXPORT_LIST="['_crPlayerContextSize', '_crPlayerInitialize', '_crPlayerLoadFile', '_crPlayerSetTrack', '_crPlayerGenerateStereoFrames', '_crPlayerVoicesCanBeToggled', '_crPlayerGetVoiceCount', '_crPlayerGetVoiceName', '_crPlayerSetVoiceState', '_crPlayerCleanup']"
 
 all: $(OBJECTS)
-
-	$(CC) *.o main.c -o $(BIN) -lm
+	$(CC) -I. $(OPT_LEVEL) -o $(JS) *.o ../kssplay_interface.c --memory-init-file 0 -s EXPORTED_FUNCTIONS=$(EXPORT_LIST) -s ASSERTIONS=2
 	
 convert.o: libkss/convert/*.c libkss/convert/*.h
-	gcc -c libkss/convert/*.c 
+	$(CC) $(OPT_LEVEL) -c libkss/convert/*.c
 		
 libkss.o: libkss/*.c libkss/*.h
-	gcc -c libkss/*.c
+	$(CC) $(OPT_LEVEL) -c libkss/*.c
 	
 kmz80.o: kmz80/*.c kmz80/*.h
-	gcc -c kmz80/*.c
+	$(CC) $(OPT_LEVEL) -c kmz80/*.c
 	
 device.o: device/*.c device/*.h
-	gcc -c device/*.c
+	$(CC) $(OPT_LEVEL) -c device/*.c
