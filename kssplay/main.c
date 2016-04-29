@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
   int data_length = 0, i, t ;
 
   KSSPLAY *kssplay ;
+  k_uint8 *kss_data;
+  k_uint32 kss_data_size;
   KSS *kss ;
   FILE *fp ;
 
@@ -140,11 +142,22 @@ int main(int argc, char *argv[])
   KSS_load_kinrou("D:\\MSX\\KINROU5.DRV") ;
   */
 
+#if 0
   if((kss=KSS_load_file(argv[1]))== NULL)
   {
     fprintf(stderr,"FILE READ ERROR!\n") ;
     exit(1) ;
   }
+#else
+  fp = fopen(argv[1], "rb");
+  fseek(fp, 0, SEEK_END);
+  kss_data_size = ftell(fp);
+  printf("%s is %d bytes\n", argv[1], kss_data_size);
+  fseek(fp, 0, SEEK_SET);
+  kss_data = (k_uint8*)malloc(kss_data_size);
+  fread(kss_data, kss_data_size, 1, fp);
+  kss = KSS_bin2kss(kss_data, kss_data_size, NULL);
+#endif
 
   /* Print title strings */
   printf("[%s]", kss->idstr) ;
