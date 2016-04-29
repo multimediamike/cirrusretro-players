@@ -146,7 +146,7 @@ SNG_writeIO (SNG * sng, e_uint32 val)
   }
 }
 
-inline e_int16
+e_int16
 calc (SNG * sng)
 {
 

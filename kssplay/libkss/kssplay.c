@@ -375,7 +375,7 @@ inline int clip(int min, int val, int max)
   else return val ;
 }
 
-inline void calc_mono(KSSPLAY *kssplay, k_int16 *buf, k_uint32 length)
+void calc_mono(KSSPLAY *kssplay, k_int16 *buf, k_uint32 length)
 {
   k_uint32 i;
   k_int32 d;
@@ -422,7 +422,7 @@ inline void calc_mono(KSSPLAY *kssplay, k_int16 *buf, k_uint32 length)
   }
 }
 
-inline void calc_stereo(KSSPLAY *kssplay, k_int16 *buf, k_uint32 length)
+void calc_stereo(KSSPLAY *kssplay, k_int16 *buf, k_uint32 length)
 {
   k_uint32 i ;
   k_int32 ch[2], b[2], c;
