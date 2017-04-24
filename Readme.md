@@ -34,12 +34,7 @@ To build using ninja, first generate the 'build.ninja' file using the
 program by simply typing `ninja`. This will build all the available
 players.
 
-Clean intermediate files using `make clean`.
-
-Note that the build script uses the '-j' option which does not limit the
-number of parallel build jobs. Specify the environment variable
-`BUILD_THREADS` in order to limit the number of jobs. E.g.:
-`BUILD_THREADS=2 make` will only build using 2 processes.
+Clean intermediate files using `ninja -t clean`.
 
 ## Demonstration
 After building the players, you can run the included demo web server to
