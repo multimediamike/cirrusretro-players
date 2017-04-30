@@ -23,7 +23,7 @@ def fetch_http_bytes(netloc, path, offset, length):
 def list_remote_7z(url):
     # make sure heavy-lifting tool works
     if not os.access(CMD_7ZA, os.X_OK):
-        print "Expected to file the executable tool '%s'" % (CMD_7ZA)
+        print "Expected to find the executable tool '%s'" % (CMD_7ZA)
         sys.exit(1)
 
     # break down the URL
