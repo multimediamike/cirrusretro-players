@@ -24,15 +24,17 @@ and Microsoft Edge.
 * DSF Sega Dreamcast sound files, but only if they are packaged as .psfarchive files
 
 ## Building
-To build all the players, type `make`. Note that this requires that Emscripten
-be installed as well as [ccache](https://ccache.samba.org/) for accelerating successive builds.
+Prerequisites to building:
+* Emscripten C/C++ to JS transpiler
+* [ninja build system](https://ninja-build.org/)
+* The 'ninja-syntax' Python module (`pip install ninja-syntax`)
 
-Clean intermediate files using `make clean`.
+To build using ninja, first generate the 'build.ninja' file using the
+'build-ninja-build-file.py' script. After this, invoke the ninja build
+program by simply typing `ninja`. This will build all the available
+players.
 
-Note that the build script uses the '-j' option which does not limit the
-number of parallel build jobs. Specify the environment variable
-`BUILD_THREADS` in order to limit the number of jobs. E.g.:
-`BUILD_THREADS=2 make` will only build using 2 processes.
+Clean intermediate files using `ninja -t clean`.
 
 ## Demonstration
 After building the players, you can run the included demo web server to

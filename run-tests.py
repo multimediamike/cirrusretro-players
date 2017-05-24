@@ -19,7 +19,7 @@ if __name__ == "__main__":
     command = "%s -v" % (NODE)
     (status, output) = commands.getstatusoutput(command)
     if status != 0:
-        print "'node' not found in path"
+        print "'%s' not found in path" % (NODE)
         sys.exit(1)
 
     testSpecs = glob.glob("test-specs/*.json")
