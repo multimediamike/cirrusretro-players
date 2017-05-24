@@ -20,70 +20,60 @@ var musicTests = [
         'name': '(Select a music file)',
         'player': null,
         'musicUrl': null,
-        'musicSize': 0,
         'trackCount': 0
     },
     {
         'name': 'DSF (Ikaruga)',
         'player': '/final/cr-aosdk-dsf.js',
         'musicUrl': '/music-samples/ikaruga.dsfarchive',
-        'musicSize': 374480,
         'trackCount': 9
     },
     {
         'name': 'SSF (Minnesota Fats)',
         'player': '/final/cr-aosdk-ssf.js',
         'musicUrl': '/music-samples/minnesota-fats.ssfarchive',
-        'musicSize': 6178850,
         'trackCount': 33
     },
     {
         'name': 'NSFe w/ VRC6 (Castlevania 3, Japanese)',
         'player': '/final/cr-gme-nsf.js',
         'musicUrl': '/music-samples/akumajou-densetsu.nsf.xz',
-        'musicSize': 30884,
         'trackCount': 28
     },
     {
         'name': 'SPC (Battletoads)',
         'player': '/final/cr-gme-spc.js',
         'musicUrl': '/music-samples/btbm.gamemusic.xz',
-        'musicSize': 54188,
         'trackCount': 13
     },
     {
         'name': 'GBS (Battletoads)',
         'player': '/final/cr-gme-gbs.js',
         'musicUrl': '/music-samples/battletoads.gbs.xz',
-        'musicSize': 9560,
         'trackCount': 14
     },
     {
         'name': 'VGM, Genesis (Sonic)',
         'player': '/final/cr-gme-vgm.js',
         'musicUrl': '/music-samples/sonic3-icecap1.vgm',
-        'musicSize': 797530,
         'trackCount': 1
     },
     {
         'name': 'AY (Burnin\' Rubber)',
         'player': '/final/cr-gme-ay.js',
         'musicUrl': '/music-samples/burnin-rubber.ay.xz',
-        'musicSize': 3164,
         'trackCount': 5
     },
     {
         'name': 'HES (Lady Sword)',
         'player': '/final/cr-gme-hes.js',
         'musicUrl': '/music-samples/lady-sword.hes.xz',
-        'musicSize': 4856,
         'trackCount': 1
     },
     {
         'name': 'SAP (Mountain King)',
         'player': '/final/cr-gme-sap.js',
         'musicUrl': '/music-samples/Mountain_King.sap.xz',
-        'musicSize': 640,
         'trackCount': 1
     },
 ];
@@ -152,10 +142,8 @@ function loadTest(testNumber)
 
     /* initialize the player */
     playerUrl = musicTest['player'];
-    musicUrl = Object();
-    musicUrl.url = musicTest['musicUrl'];
-    musicUrl.size = musicTest['musicSize'];
-    cr.initializePlayer(playerUrl, musicUrl, canvas, loadProgress, playerIsReady, tick, currentTrack);
+    cr.reserveAudio();
+    cr.initializePlayer(playerUrl, musicTest['musicUrl'], canvas, loadProgress, playerIsReady, tick, currentTrack);
     updateTrackDisplay();
 }
 
