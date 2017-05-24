@@ -3,16 +3,16 @@ var cr = {};
 
 /* Module variables */
 
-/* find the audio context */
-cr.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+/* audio context */
+cr.audioCtx = null;  /* initialized by reserveAudio */
 /* for volume control */
-cr.gainNode = cr.audioCtx.createGain();
+cr.gainNode = null;  /* initialized by reserveAudio */
 
 /* other variables pertinent to audio processing */
 cr.secondsPerNode = 1.0;
 cr.channels = 2;
-cr.frameCount = cr.audioCtx.sampleRate * cr.secondsPerNode;
-cr.myArrayBuffer = cr.audioCtx.createBuffer(cr.channels, cr.frameCount, cr.audioCtx.sampleRate);
+cr.frameCount = 0;  /* initialized by reserveAudio */
+cr.myArrayBuffer = null;  /* initialized by reserveAudio */
 cr.samplesMalloc = null;
 cr.samples = null;
 cr.source = null;  /* AudioBufferSourceNode */
@@ -23,8 +23,8 @@ cr.vizType = "oscope";
 cr.vizTypeBeforeHiding = null;
 cr.framesPerSecond = 30;
 cr.vizEnabled = true;
-cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
-cr.vizBuffer = new Int16Array(cr.vizBufferSize);
+cr.vizBufferSize = 0;  /* initialized by reserveAudio */
+cr.vizBuffer = null;  /* initialized by reserveAudio */
 cr.vizBufferIndex = 0;
 cr.canvas = null;
 cr.canvasCtx = null;
@@ -52,6 +52,7 @@ cr.vuFallOffVelocity = [0, 0];
 cr.playerUrl = null;
 cr.playerSize = -1;
 cr.musicUrl = null;
+cr.musicSize = -1;
 cr.playerBytesLoaded = 0;
 cr.musicBytesLoaded = 0;
 cr.totalBytesExpected = 0;
@@ -82,13 +83,18 @@ cr.loadEvent = function(evt)
     else
         playerLoadEvent = false;
 
-    var totalBytesLoaded = cr.playerBytesLoaded + cr.musicBytesLoaded;
-
     /* fetch the size of the player JS if not already seen */
     if (cr.playerSize == -1 && playerLoadEvent)
     {
         cr.playerSize = evt.total;
         cr.totalBytesExpected += cr.playerSize;
+    }
+
+    /* fetch the size of the music if not already seen */
+    if (cr.musicSize == -1 && playerLoadEvent == false)
+    {
+        cr.musicSize = evt.total;
+        cr.totalBytesExpected += cr.musicSize;
     }
 
     if (evt.type == "progress")
@@ -143,7 +149,7 @@ cr.loadEvent = function(evt)
         /* download accounting */
         cr.aFileWasLoaded();
     }
-};
+}
 
 /*
  * Private function:
@@ -228,6 +234,31 @@ cr.resourcesLoaded = function()
     /* tell the host code that the player is ready */
     cr.playerIsReadyCallback(null);
 };
+
+/* Public function:
+ *  reserveAudio()
+ *
+ * This function reserves a handle for the WebAudio API. While the main
+ * audio playback is initialized after files are loaded, some platforms
+ * (notably Safari on iOS) require that the handle can only be requested
+ * in response to a user input event. This function allows the client to
+ * reserve that handle in the user input call stack.
+ *
+ * Input:
+ *  - none
+ *
+ * Output:
+ *  - undefined
+ */
+cr.reserveAudio = function()
+{
+    cr.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    cr.gainNode = cr.audioCtx.createGain();
+    cr.frameCount = cr.audioCtx.sampleRate * cr.secondsPerNode;
+    cr.myArrayBuffer = cr.audioCtx.createBuffer(cr.channels, cr.frameCount, cr.audioCtx.sampleRate);
+    cr.vizBufferSize = cr.audioCtx.sampleRate * cr.channels;
+    cr.vizBuffer = new Int16Array(cr.vizBufferSize);
+}
 
 /* Public function:
  *  setTrack(track)
@@ -728,7 +759,7 @@ cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, pl
     cr.canvas = hostCanvas;
     cr.currentTrack = firstTrack;
 
-    cr.totalBytesExpected = musicUrl.size;
+    cr.totalBytesExpected = 0;
 
     cr.tickCountdown = cr.audioCtx.sampleRate;
 
@@ -743,7 +774,7 @@ cr.initializePlayer = function(playerUrl, musicUrl, hostCanvas, loadProgress, pl
     musicFile.addEventListener("load", cr.loadEvent);
     musicFile.addEventListener("error", cr.loadEvent);
     musicFile.addEventListener("abort", cr.loadEvent);
-    musicFile.open("GET", musicUrl.url);
+    musicFile.open("GET", musicUrl);
     musicFile.responseType = "arraybuffer";
     musicFile.send();
 
